@@ -12,6 +12,11 @@ import Scouts from "@/pages/scouts";
 import Registration from "@/pages/registration";
 import Activities from "@/pages/activities";
 import Announcements from "@/pages/announcements";
+import Reports from "@/pages/reports";
+import Units from "@/pages/units";
+import Schools from "@/pages/schools";
+import AuditTrail from "@/pages/audit";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +27,11 @@ function Router() {
       <Route path="/registration" component={Registration} />
       <Route path="/activities" component={Activities} />
       <Route path="/announcements" component={Announcements} />
+      <Route path="/reports" component={Reports} />
+      <Route path="/units" component={Units} />
+      <Route path="/schools" component={Schools} />
+      <Route path="/audit" component={AuditTrail} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );
