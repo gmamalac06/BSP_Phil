@@ -9,6 +9,8 @@ import {
   Shield,
   School,
   ClipboardList,
+  LogOut,
+  UserCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -23,11 +25,14 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "wouter";
+import { useAuth, signOut } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: LayoutDashboard,
     roles: ["admin", "staff", "unit_leader", "scout"],
   },
@@ -77,6 +82,12 @@ const managementItems = [
     roles: ["admin", "staff"],
   },
   {
+    title: "User Approvals",
+    url: "/user-approvals",
+    icon: UserCheck,
+    roles: ["admin"],
+  },
+  {
     title: "Audit Trail",
     url: "/audit",
     icon: ClipboardList,
@@ -91,11 +102,30 @@ const managementItems = [
 ];
 
 export function AppSidebar() {
-  const [location] = useLocation();
-  const currentRole = "admin"; // TODO: Replace with actual user role
+  const [location, setLocation] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const currentRole = user?.role || "user";
 
   const filterByRole = (items: typeof menuItems) => {
     return items.filter((item) => item.roles.includes(currentRole));
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      setLocation("/login");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -150,16 +180,25 @@ export function AppSidebar() {
           </SidebarGroup>
         ) : null}
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            AD
+            {user?.username?.slice(0, 2).toUpperCase() || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Admin User</p>
-            <p className="text-xs text-muted-foreground truncate">Administrator</p>
+            <p className="text-sm font-medium truncate">{user?.username || "User"}</p>
+            <p className="text-xs text-muted-foreground truncate capitalize">{user?.role || "user"}</p>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );

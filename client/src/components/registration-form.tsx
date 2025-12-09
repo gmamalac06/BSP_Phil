@@ -11,29 +11,41 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, CheckCircle2 } from "lucide-react";
+import { useSchools } from "@/hooks/useSchools";
+import { useUnits } from "@/hooks/useUnits";
+import { validateFile } from "@/lib/storage";
 
 interface RegistrationFormProps {
   onSubmit?: (data: any) => void;
+  isSubmitting?: boolean;
 }
 
-export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
+export function RegistrationForm({ onSubmit, isSubmitting = false }: RegistrationFormProps) {
   const [step, setStep] = useState(1);
+  const { data: schools = [], isLoading: schoolsLoading } = useSchools();
+  const { data: units = [], isLoading: unitsLoading } = useUnits();
+
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    middleName: "",
+    fullName: "",
     birthDate: "",
     gender: "",
     address: "",
     municipality: "",
     contactNumber: "",
     email: "",
+    parentGuardian: "",
+    emergencyContact: "",
+    bloodType: "",
     school: "",
     unit: "",
     rank: "",
+    profilePhoto: null as File | null,
     paymentProof: null as File | null,
   });
+
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -42,8 +54,34 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        setFileError(validation.error || "Invalid file");
+        updateField("paymentProof", null);
+        return;
+      }
+
+      setFileError(null);
       updateField("paymentProof", file);
       console.log("Payment proof uploaded:", file.name);
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate photo (only images, max 5MB)
+      const validation = validateFile(file, 5, ['image/jpeg', 'image/png', 'image/jpg']);
+      if (!validation.valid) {
+        setPhotoError(validation.error || "Invalid file");
+        updateField("profilePhoto", null);
+        return;
+      }
+
+      setPhotoError(null);
+      updateField("profilePhoto", file);
+      console.log("Profile photo uploaded:", file.name);
     }
   };
 
@@ -61,9 +99,8 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
           {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
-              className={`h-2 flex-1 rounded-full ${
-                s <= step ? "bg-primary" : "bg-muted"
-              }`}
+              className={`h-2 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-muted"
+                }`}
             />
           ))}
         </div>
@@ -71,33 +108,14 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
       <CardContent>
         {step === 1 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => updateField("firstName", e.target.value)}
-                  data-testid="input-first-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => updateField("lastName", e.target.value)}
-                  data-testid="input-last-name"
-                />
-              </div>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="middleName">Middle Name</Label>
+              <Label htmlFor="fullName">Full Name *</Label>
               <Input
-                id="middleName"
-                value={formData.middleName}
-                onChange={(e) => updateField("middleName", e.target.value)}
-                data-testid="input-middle-name"
+                id="fullName"
+                value={formData.fullName}
+                onChange={(e) => updateField("fullName", e.target.value)}
+                placeholder="Enter your complete name"
+                data-testid="input-full-name"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -122,6 +140,65 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
                     <SelectItem value="female">Female</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bloodType">Blood Type *</Label>
+              <Select value={formData.bloodType} onValueChange={(v) => updateField("bloodType", v)}>
+                <SelectTrigger id="bloodType" data-testid="select-blood-type">
+                  <SelectValue placeholder="Select blood type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A+">A+</SelectItem>
+                  <SelectItem value="A-">A-</SelectItem>
+                  <SelectItem value="B+">B+</SelectItem>
+                  <SelectItem value="B-">B-</SelectItem>
+                  <SelectItem value="O+">O+</SelectItem>
+                  <SelectItem value="O-">O-</SelectItem>
+                  <SelectItem value="AB+">AB+</SelectItem>
+                  <SelectItem value="AB-">AB-</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profilePhoto">Profile Photo (2x2 ID Picture) *</Label>
+              <div className={`border-2 border-dashed rounded-md p-6 text-center hover:bg-muted/50 transition-colors ${photoError ? "border-destructive" : formData.profilePhoto ? "border-green-500" : ""
+                }`}>
+                <Input
+                  id="profilePhoto"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                  data-testid="input-profile-photo"
+                />
+                <Label
+                  htmlFor="profilePhoto"
+                  className="flex flex-col items-center gap-2 cursor-pointer"
+                >
+                  {formData.profilePhoto ? (
+                    <>
+                      <CheckCircle2 className="h-8 w-8 text-green-500" />
+                      <span className="text-sm font-medium text-green-600">
+                        {formData.profilePhoto.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Click to change photo
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-sm font-medium">Upload Profile Photo</span>
+                      <span className="text-xs text-muted-foreground">
+                        JPG, PNG (Max 5MB) - 2x2 ID picture
+                      </span>
+                    </>
+                  )}
+                </Label>
+                {photoError && (
+                  <p className="text-sm text-destructive mt-2">{photoError}</p>
+                )}
               </div>
             </div>
           </div>
@@ -167,6 +244,27 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
                 data-testid="input-email"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="parentGuardian">Parent/Guardian Name</Label>
+              <Input
+                id="parentGuardian"
+                value={formData.parentGuardian}
+                onChange={(e) => updateField("parentGuardian", e.target.value)}
+                placeholder="Full name of parent or guardian"
+                data-testid="input-parent-guardian"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContact">Emergency Contact Number *</Label>
+              <Input
+                id="emergencyContact"
+                type="tel"
+                value={formData.emergencyContact}
+                onChange={(e) => updateField("emergencyContact", e.target.value)}
+                placeholder="+63 XXX XXX XXXX"
+                data-testid="input-emergency-contact"
+              />
+            </div>
           </div>
         )}
 
@@ -176,12 +274,14 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
               <Label htmlFor="school">School *</Label>
               <Select value={formData.school} onValueChange={(v) => updateField("school", v)}>
                 <SelectTrigger id="school" data-testid="select-school">
-                  <SelectValue placeholder="Select school" />
+                  <SelectValue placeholder={schoolsLoading ? "Loading schools..." : "Select school"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manila-science">Manila Science High School</SelectItem>
-                  <SelectItem value="qc-high">Quezon City High School</SelectItem>
-                  <SelectItem value="makati-high">Makati High School</SelectItem>
+                  {schools.map((school) => (
+                    <SelectItem key={school.id} value={school.id}>
+                      {school.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -189,12 +289,14 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
               <Label htmlFor="unit">Unit *</Label>
               <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
                 <SelectTrigger id="unit" data-testid="select-unit">
-                  <SelectValue placeholder="Select unit" />
+                  <SelectValue placeholder={unitsLoading ? "Loading units..." : "Select unit"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="eagle">Eagle Patrol</SelectItem>
-                  <SelectItem value="phoenix">Phoenix Patrol</SelectItem>
-                  <SelectItem value="falcon">Falcon Patrol</SelectItem>
+                  {units.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -219,7 +321,8 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="paymentProof">Payment Proof *</Label>
-              <div className="border-2 border-dashed rounded-md p-6 text-center hover-elevate active-elevate-2">
+              <div className={`border-2 border-dashed rounded-md p-6 text-center hover-elevate active-elevate-2 ${fileError ? "border-destructive" : formData.paymentProof ? "border-green-500" : ""
+                }`}>
                 <Input
                   id="paymentProof"
                   type="file"
@@ -232,22 +335,29 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
                   htmlFor="paymentProof"
                   className="flex flex-col items-center gap-2 cursor-pointer"
                 >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
+                  {formData.paymentProof ? (
+                    <CheckCircle2 className="h-8 w-8 text-green-500" />
+                  ) : (
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  )}
+                  <span className={`text-sm ${formData.paymentProof ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
                     {formData.paymentProof
                       ? formData.paymentProof.name
                       : "Click to upload payment proof"}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    Supported formats: JPG, PNG, PDF
+                    Supported formats: JPG, PNG, PDF (Max 5MB)
                   </span>
                 </Label>
               </div>
+              {fileError && (
+                <p className="text-sm text-destructive">{fileError}</p>
+              )}
             </div>
             <div className="bg-muted p-4 rounded-md">
               <h4 className="font-semibold mb-2">Registration Summary</h4>
               <div className="space-y-1 text-sm">
-                <p><span className="text-muted-foreground">Name:</span> {formData.firstName} {formData.lastName}</p>
+                <p><span className="text-muted-foreground">Name:</span> {formData.fullName}</p>
                 <p><span className="text-muted-foreground">School:</span> {formData.school}</p>
                 <p><span className="text-muted-foreground">Unit:</span> {formData.unit}</p>
               </div>
@@ -274,8 +384,8 @@ export function RegistrationForm({ onSubmit }: RegistrationFormProps) {
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} data-testid="button-submit">
-              Submit Registration
+            <Button onClick={handleSubmit} data-testid="button-submit" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Registration"}
             </Button>
           )}
         </div>

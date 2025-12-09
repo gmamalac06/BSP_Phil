@@ -1,28 +1,24 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Edit, MoreVertical } from "lucide-react";
+import { Users, Edit, MoreVertical, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { Unit } from "@shared/schema";
 
 interface UnitCardProps {
-  unit: {
-    id: string;
-    name: string;
-    leader: string;
-    memberCount: number;
-    school: string;
-    status: "active" | "inactive";
-  };
-  onEdit?: (id: string) => void;
-  onViewMembers?: (id: string) => void;
+  unit: Unit;
+  onEdit?: () => void;
+  onViewMembers?: () => void;
+  onDelete?: () => void;
 }
 
-export function UnitCard({ unit, onEdit, onViewMembers }: UnitCardProps) {
+export function UnitCard({ unit, onEdit, onViewMembers, onDelete }: UnitCardProps) {
   return (
     <Card className="hover-elevate" data-testid={`card-unit-${unit.id}`}>
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3">
@@ -41,13 +37,18 @@ export function UnitCard({ unit, onEdit, onViewMembers }: UnitCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit?.(unit.id)}>
+            <DropdownMenuItem onClick={onEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit Unit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onViewMembers?.(unit.id)}>
+            <DropdownMenuItem onClick={onViewMembers}>
               <Users className="mr-2 h-4 w-4" />
               View Members
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Unit
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -59,12 +60,10 @@ export function UnitCard({ unit, onEdit, onViewMembers }: UnitCardProps) {
             <span className="text-sm font-medium">{unit.leader}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-muted-foreground">School:</span>
-            <span className="text-sm font-medium truncate">{unit.school}</span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-muted-foreground">Members:</span>
-            <span className="text-sm font-medium">{unit.memberCount}</span>
+            <span className="text-sm text-muted-foreground">Status:</span>
+            <Badge className={unit.status === "active" ? "bg-chart-3 text-white" : "bg-muted text-muted-foreground"}>
+              {unit.status.charAt(0).toUpperCase() + unit.status.slice(1)}
+            </Badge>
           </div>
         </div>
       </CardContent>

@@ -1,27 +1,23 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { School, Users, Edit, MoreVertical } from "lucide-react";
+import { School, Users, Edit, MoreVertical, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { School as SchoolType } from "@shared/schema";
 
 interface SchoolCardProps {
-  school: {
-    id: string;
-    name: string;
-    municipality: string;
-    scoutCount: number;
-    unitCount: number;
-    principal: string;
-  };
-  onEdit?: (id: string) => void;
-  onViewScouts?: (id: string) => void;
+  school: SchoolType;
+  onEdit?: () => void;
+  onViewScouts?: () => void;
+  onDelete?: () => void;
 }
 
-export function SchoolCard({ school, onEdit, onViewScouts }: SchoolCardProps) {
+export function SchoolCard({ school, onEdit, onViewScouts, onDelete }: SchoolCardProps) {
   return (
     <Card className="hover-elevate" data-testid={`card-school-${school.id}`}>
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3">
@@ -43,13 +39,18 @@ export function SchoolCard({ school, onEdit, onViewScouts }: SchoolCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit?.(school.id)}>
+            <DropdownMenuItem onClick={onEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit School
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onViewScouts?.(school.id)}>
+            <DropdownMenuItem onClick={onViewScouts}>
               <Users className="mr-2 h-4 w-4" />
               View Scouts
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete School
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -58,15 +59,11 @@ export function SchoolCard({ school, onEdit, onViewScouts }: SchoolCardProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-muted-foreground">Principal:</span>
-            <span className="text-sm font-medium">{school.principal}</span>
+            <span className="text-sm font-medium">{school.principal || "N/A"}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-muted-foreground">Scout Units:</span>
-            <span className="text-sm font-medium">{school.unitCount}</span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-muted-foreground">Total Scouts:</span>
-            <span className="text-sm font-medium">{school.scoutCount}</span>
+            <span className="text-sm text-muted-foreground">Municipality:</span>
+            <span className="text-sm font-medium">{school.municipality}</span>
           </div>
         </div>
       </CardContent>

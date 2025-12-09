@@ -8,15 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-
-interface AuditLog {
-  id: string;
-  timestamp: Date;
-  user: string;
-  action: string;
-  details: string;
-  category: "create" | "update" | "delete" | "login" | "system";
-}
+import type { AuditLog } from "@shared/schema";
 
 interface AuditLogTableProps {
   logs: AuditLog[];
@@ -44,21 +36,29 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {logs.map((log) => (
-            <TableRow key={log.id} data-testid={`row-audit-${log.id}`}>
-              <TableCell className="font-mono text-xs">
-                {format(log.timestamp, "PPpp")}
-              </TableCell>
-              <TableCell className="font-medium">{log.user}</TableCell>
-              <TableCell>{log.action}</TableCell>
-              <TableCell className="max-w-md truncate">{log.details}</TableCell>
-              <TableCell>
-                <Badge className={categoryColors[log.category]}>
-                  {log.category.charAt(0).toUpperCase() + log.category.slice(1)}
-                </Badge>
+          {logs.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                No audit logs found
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            logs.map((log) => (
+              <TableRow key={log.id} data-testid={`row-audit-${log.id}`}>
+                <TableCell className="font-mono text-xs">
+                  {log.createdAt ? format(new Date(log.createdAt), "PPpp") : "N/A"}
+                </TableCell>
+                <TableCell className="font-medium">{log.userId || "System"}</TableCell>
+                <TableCell>{log.action}</TableCell>
+                <TableCell className="max-w-md truncate">{log.details || "N/A"}</TableCell>
+                <TableCell>
+                  <Badge className={categoryColors[log.category as keyof typeof categoryColors] || "bg-muted"}>
+                    {log.category.charAt(0).toUpperCase() + log.category.slice(1)}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>

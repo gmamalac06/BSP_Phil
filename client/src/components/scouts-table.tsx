@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit, Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, Edit, Download, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Scout {
@@ -26,9 +27,12 @@ interface Scout {
 
 interface ScoutsTableProps {
   scouts: Scout[];
-  onView?: (id: string) => void;
-  onEdit?: (id: string) => void;
+  selectedIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+  onView?: (scout: Scout) => void;
+  onEdit?: (scout: Scout) => void;
   onDownloadId?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 const statusColors = {
@@ -37,12 +41,39 @@ const statusColors = {
   expired: "bg-muted text-muted-foreground",
 };
 
-export function ScoutsTable({ scouts, onView, onEdit, onDownloadId }: ScoutsTableProps) {
+export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, onEdit, onDownloadId, onDelete }: ScoutsTableProps) {
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      onSelectionChange(scouts.map(s => s.id));
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      onSelectionChange([...selectedIds, id]);
+    } else {
+      onSelectionChange(selectedIds.filter(selectedId => selectedId !== id));
+    }
+  };
+
+  const isAllSelected = scouts.length > 0 && selectedIds.length === scouts.length;
+  const isSomeSelected = selectedIds.length > 0 && selectedIds.length < scouts.length;
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">
+              <Checkbox
+                checked={isAllSelected}
+                onCheckedChange={handleSelectAll}
+                aria-label="Select all scouts"
+                className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""}
+              />
+            </TableHead>
             <TableHead>Scout</TableHead>
             <TableHead>UID</TableHead>
             <TableHead>Unit</TableHead>
@@ -63,8 +94,21 @@ export function ScoutsTable({ scouts, onView, onEdit, onDownloadId }: ScoutsTabl
               .toUpperCase()
               .slice(0, 2);
 
+            const isSelected = selectedIds.includes(scout.id);
+
             return (
-              <TableRow key={scout.id} data-testid={`row-scout-${scout.id}`}>
+              <TableRow 
+                key={scout.id} 
+                data-testid={`row-scout-${scout.id}`}
+                className={isSelected ? "bg-muted/50" : ""}
+              >
+                <TableCell>
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(checked) => handleSelectOne(scout.id, checked as boolean)}
+                    aria-label={`Select ${scout.name}`}
+                  />
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
@@ -92,7 +136,7 @@ export function ScoutsTable({ scouts, onView, onEdit, onDownloadId }: ScoutsTabl
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onView?.(scout.id)}
+                      onClick={() => onView?.(scout)}
                       data-testid={`button-view-${scout.id}`}
                     >
                       <Eye className="h-4 w-4" />
@@ -100,7 +144,7 @@ export function ScoutsTable({ scouts, onView, onEdit, onDownloadId }: ScoutsTabl
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onEdit?.(scout.id)}
+                      onClick={() => onEdit?.(scout)}
                       data-testid={`button-edit-${scout.id}`}
                     >
                       <Edit className="h-4 w-4" />
@@ -112,6 +156,15 @@ export function ScoutsTable({ scouts, onView, onEdit, onDownloadId }: ScoutsTabl
                       data-testid={`button-download-id-${scout.id}`}
                     >
                       <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDelete?.(scout.id)}
+                      data-testid={`button-delete-${scout.id}`}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>

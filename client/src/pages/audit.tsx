@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { AuditLogTable } from "@/components/audit-log";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,60 +11,108 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Download, Filter } from "lucide-react";
+import { Search, Download, Filter, RefreshCw } from "lucide-react";
+import { useAuditLogs } from "@/hooks/useAudit";
+import { useToast } from "@/hooks/use-toast";
+import { exportToCSV, generateFilename, formatDateTimeForExport, ExportColumn } from "@/lib/export";
 
 export default function AuditTrail() {
-  // TODO: Remove mock data
-  const logs = [
-    {
-      id: "1",
-      timestamp: new Date(Date.now() - 1000 * 60 * 15),
-      user: "Admin User",
-      action: "Created Scout",
-      details: "Created new scout registration for Juan Dela Cruz (BSP-2024-001234)",
-      category: "create" as const,
-    },
-    {
-      id: "2",
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      user: "Staff User",
-      action: "Updated Activity",
-      details: "Modified Community Service Day attendance count from 45 to 48",
-      category: "update" as const,
-    },
-    {
-      id: "3",
-      timestamp: new Date(Date.now() - 1000 * 60 * 45),
-      user: "Admin User",
-      action: "User Login",
-      details: "Successful login from IP 192.168.1.100",
-      category: "login" as const,
-    },
-    {
-      id: "4",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60),
-      user: "System",
-      action: "Database Backup",
-      details: "Automated database backup completed successfully",
-      category: "system" as const,
-    },
-    {
-      id: "5",
-      timestamp: new Date(Date.now() - 1000 * 60 * 90),
-      user: "Staff User",
-      action: "Deleted Announcement",
-      details: "Deleted outdated announcement 'Summer Camp 2023'",
-      category: "delete" as const,
-    },
-    {
-      id: "6",
-      timestamp: new Date(Date.now() - 1000 * 60 * 120),
-      user: "Unit Leader",
-      action: "Updated Unit",
-      details: "Changed Eagle Patrol leader from Rodriguez to Santos",
-      category: "update" as const,
-    },
-  ];
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [userFilter, setUserFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("");
+
+  const { data: logs = [], isLoading, refetch } = useAuditLogs();
+  const { toast } = useToast();
+
+  const filteredLogs = useMemo(() => {
+    let result = [...logs];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (log) =>
+          log.action.toLowerCase().includes(query) ||
+          log.details?.toLowerCase().includes(query) ||
+          log.userId?.toLowerCase().includes(query)
+      );
+    }
+
+    if (categoryFilter && categoryFilter !== "all") {
+      result = result.filter((log) => log.category === categoryFilter);
+    }
+
+    if (userFilter && userFilter !== "all") {
+      result = result.filter((log) => log.userId === userFilter);
+    }
+
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter);
+      result = result.filter((log) => {
+        if (!log.createdAt) return false;
+        const logDate = new Date(log.createdAt);
+        return (
+          logDate.getFullYear() === filterDate.getFullYear() &&
+          logDate.getMonth() === filterDate.getMonth() &&
+          logDate.getDate() === filterDate.getDate()
+        );
+      });
+    }
+
+    return result;
+  }, [logs, searchQuery, categoryFilter, userFilter, dateFilter]);
+
+  // Get unique users for the filter dropdown
+  const uniqueUsers = useMemo(() => {
+    const users = new Set<string>();
+    logs.forEach((log) => {
+      // Only add non-empty user IDs
+      if (log.userId && log.userId.trim() !== "") {
+        users.add(log.userId);
+      }
+    });
+    return Array.from(users).sort();
+  }, [logs]);
+
+  const handleExportLogs = () => {
+    if (filteredLogs.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "There are no audit logs matching your filters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const columns: ExportColumn[] = [
+      { 
+        key: "createdAt", 
+        label: "Timestamp",
+        format: formatDateTimeForExport
+      },
+      { key: "userId", label: "User ID" },
+      { key: "action", label: "Action" },
+      { key: "details", label: "Details" },
+      { key: "category", label: "Category" },
+      { key: "ipAddress", label: "IP Address" },
+    ];
+
+    const prefix = categoryFilter !== "all" ? `audit_${categoryFilter}` : "audit_logs";
+    exportToCSV(filteredLogs, columns, generateFilename(prefix));
+
+    toast({
+      title: "Export successful",
+      description: `Exported ${filteredLogs.length} audit log${filteredLogs.length === 1 ? "" : "s"}`,
+    });
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    toast({
+      title: "Refreshed",
+      description: "Audit logs have been refreshed",
+    });
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -71,13 +120,24 @@ export default function AuditTrail() {
         <div>
           <h1 className="text-4xl font-bold mb-2">Audit Trail</h1>
           <p className="text-muted-foreground">
-            Monitor system activities and user actions
+            Monitor system activities and user actions ({filteredLogs.length} {filteredLogs.length === 1 ? 'log' : 'logs'})
           </p>
         </div>
-        <Button variant="outline" data-testid="button-export-logs">
-          <Download className="h-4 w-4 mr-2" />
-          Export Logs
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleExportLogs}
+            disabled={filteredLogs.length === 0}
+            data-testid="button-export-logs"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export ({filteredLogs.length})
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -98,13 +158,15 @@ export default function AuditTrail() {
                   placeholder="Search logs..."
                   className="pl-9"
                   data-testid="input-search-logs"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger id="category" data-testid="select-category">
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
@@ -121,24 +183,28 @@ export default function AuditTrail() {
 
             <div className="space-y-2">
               <Label htmlFor="user">User</Label>
-              <Select>
+              <Select value={userFilter} onValueChange={setUserFilter}>
                 <SelectTrigger id="user" data-testid="select-user">
                   <SelectValue placeholder="All users" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="admin">Admin User</SelectItem>
-                  <SelectItem value="staff">Staff User</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
+                  {uniqueUsers.filter(userId => userId && userId.trim() !== "").map((userId) => (
+                    <SelectItem key={userId} value={userId}>
+                      {userId}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date-range">Date Range</Label>
+              <Label htmlFor="date-range">Filter by Date</Label>
               <Input
                 id="date-range"
                 type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
                 data-testid="input-date-range"
               />
             </div>
@@ -146,7 +212,13 @@ export default function AuditTrail() {
         </CardContent>
       </Card>
 
-      <AuditLogTable logs={logs} />
+      {isLoading ? (
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-pulse text-muted-foreground">Loading audit logs...</div>
+        </div>
+      ) : (
+        <AuditLogTable logs={filteredLogs} />
+      )}
     </div>
   );
 }
