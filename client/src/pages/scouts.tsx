@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, generateFilename, formatDateForExport, ExportColumn } from "@/lib/export";
 import { generateScoutIDCard } from "@/lib/id-card";
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Scout } from "@shared/schema";
 
 export default function Scouts() {
@@ -29,6 +30,32 @@ export default function Scouts() {
   const updateScout = useUpdateScout();
   const deleteScout = useDeleteScout();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Scout approval mutation
+  const approveScout = useMutation({
+    mutationFn: async (scoutId: string) => {
+      const res = await fetch(`/api/scouts/${scoutId}/approve`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to approve scout");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scouts"] });
+      toast({
+        title: "Scout Approved",
+        description: "Scout has been activated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const filteredScouts = useMemo(() => {
     let result = [...scouts];
@@ -94,6 +121,10 @@ export default function Scouts() {
 
   const handleViewScout = (scout: Scout) => {
     setViewingScout(scout);
+  };
+
+  const handleApproveScout = (scoutId: string) => {
+    approveScout.mutate(scoutId);
   };
 
   const handleDownloadIDCard = async (scoutId: string) => {
@@ -277,6 +308,7 @@ export default function Scouts() {
                   onEdit={setEditingScout}
                   onDownloadId={handleDownloadIDCard}
                   onDelete={(id) => setDeletingScoutId(id)}
+                  onApprove={handleApproveScout}
                 />
               </TabsContent>
 
@@ -289,6 +321,7 @@ export default function Scouts() {
                   onEdit={setEditingScout}
                   onDownloadId={handleDownloadIDCard}
                   onDelete={(id) => setDeletingScoutId(id)}
+                  onApprove={handleApproveScout}
                 />
               </TabsContent>
 
@@ -301,6 +334,7 @@ export default function Scouts() {
                   onEdit={setEditingScout}
                   onDownloadId={handleDownloadIDCard}
                   onDelete={(id) => setDeletingScoutId(id)}
+                  onApprove={handleApproveScout}
                 />
               </TabsContent>
 
@@ -313,6 +347,7 @@ export default function Scouts() {
                   onEdit={setEditingScout}
                   onDownloadId={handleDownloadIDCard}
                   onDelete={(id) => setDeletingScoutId(id)}
+                  onApprove={handleApproveScout}
                 />
               </TabsContent>
             </Tabs>

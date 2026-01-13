@@ -1,11 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin } from "lucide-react";
 import type { Activity } from "@shared/schema";
+
+// Lazy load MapSelector to avoid SSR issues
+const MapSelector = lazy(() => import("@/components/map-selector").then(m => ({ default: m.MapSelector })));
 
 interface ActivityFormDialogProps {
   open: boolean;
@@ -15,6 +19,8 @@ interface ActivityFormDialogProps {
     description: string;
     date: string;
     location: string;
+    latitude?: string | null;
+    longitude?: string | null;
     capacity: number;
     status: string;
   }) => void;
@@ -34,6 +40,8 @@ export function ActivityFormDialog({
     description: "",
     date: "",
     location: "",
+    latitude: null as string | null,
+    longitude: null as string | null,
     capacity: 50,
     status: "upcoming",
   });
@@ -48,6 +56,8 @@ export function ActivityFormDialog({
         description: activity.description,
         date: formattedDate,
         location: activity.location,
+        latitude: (activity as any).latitude || null,
+        longitude: (activity as any).longitude || null,
         capacity: activity.capacity,
         status: activity.status,
       });
@@ -57,20 +67,31 @@ export function ActivityFormDialog({
         description: "",
         date: "",
         location: "",
+        latitude: null,
+        longitude: null,
         capacity: 50,
         status: "upcoming",
       });
     }
   }, [activity, open]);
 
+  const handleLocationChange = (lat: number, lng: number, address?: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      latitude: lat.toString(),
+      longitude: lng.toString(),
+      location: address || prev.location,
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData); // Pass formData as-is, parent handles conversion
+    onSubmit(formData);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{activity ? "Edit Activity" : "Create New Activity"}</DialogTitle>
           <DialogDescription>
@@ -78,7 +99,7 @@ export function ActivityFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
             <div className="space-y-2">
               <Label htmlFor="title">Activity Title *</Label>
               <Input
@@ -123,16 +144,35 @@ export function ActivityFormDialog({
                 />
               </div>
             </div>
+
+            {/* Location Section */}
             <div className="space-y-2">
-              <Label htmlFor="location">Location *</Label>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="location">Location *</Label>
+              </div>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Enter activity location"
+                placeholder="Search or click on map to select location"
                 required
               />
             </div>
+
+            {/* Map Selector - Always visible */}
+            <Suspense fallback={
+              <div className="h-64 rounded-lg border bg-muted flex items-center justify-center">
+                <p className="text-muted-foreground text-sm">Loading map...</p>
+              </div>
+            }>
+              <MapSelector
+                latitude={formData.latitude ? parseFloat(formData.latitude) : null}
+                longitude={formData.longitude ? parseFloat(formData.longitude) : null}
+                onLocationChange={handleLocationChange}
+              />
+            </Suspense>
+
             <div className="space-y-2">
               <Label htmlFor="status">Status *</Label>
               <Select
@@ -169,5 +209,3 @@ export function ActivityFormDialog({
     </Dialog>
   );
 }
-
-

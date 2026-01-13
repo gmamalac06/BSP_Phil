@@ -21,6 +21,8 @@ export const schools = pgTable("schools", {
   name: text("name").notNull(),
   municipality: text("municipality").notNull(),
   principal: text("principal"),
+  logo: text("logo"), // URL to school logo in storage
+  schoolNumber: text("school_number"), // School identification number
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -65,6 +67,8 @@ export const activities = pgTable("activities", {
   description: text("description").notNull(),
   date: timestamp("date", { mode: 'string' }).notNull(),
   location: text("location").notNull(),
+  latitude: text("latitude"), // Map coordinates (stored as text for precision)
+  longitude: text("longitude"), // Map coordinates (stored as text for precision)
   capacity: integer("capacity").notNull(),
   status: text("status").notNull().default("upcoming"), // upcoming, ongoing, completed, cancelled
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -86,6 +90,9 @@ export const announcements = pgTable("announcements", {
   content: text("content").notNull(),
   type: text("type").notNull(), // announcement, policy, event
   author: text("author").notNull(),
+  eventDate: timestamp("event_date", { mode: 'string' }), // Optional date for event-type announcements
+  eventTime: text("event_time"), // Optional time string (e.g., "2:00 PM")
+  photo: text("photo"), // URL to announcement photo in storage
   smsNotified: boolean("sms_notified").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -133,6 +140,8 @@ export const insertActivitySchema = z.object({
   description: z.string().min(1, "Description is required"),
   date: z.string().min(1, "Date is required"), // Accept ISO string from client
   location: z.string().min(1, "Location is required"),
+  latitude: z.string().nullable().optional(), // Map coordinates
+  longitude: z.string().nullable().optional(), // Map coordinates
   capacity: z.number().min(1, "Capacity must be at least 1"),
   status: z.string().default("upcoming"),
   createdAt: z.date().optional(),
@@ -197,3 +206,22 @@ export const selectSettingsSchema = createSelectSchema(settings);
 
 export type Settings = typeof settings.$inferSelect;
 export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+
+// Carousel Slides table - landing page event slides (admin configurable)
+export const carouselSlides = pgTable("carousel_slides", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url").notNull(), // URL to slide image in storage
+  linkUrl: text("link_url"), // Optional link when clicking the slide
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCarouselSlideSchema = createInsertSchema(carouselSlides);
+export const selectCarouselSlideSchema = createSelectSchema(carouselSlides);
+
+export type CarouselSlide = typeof carouselSlides.$inferSelect;
+export type InsertCarouselSlide = z.infer<typeof insertCarouselSlideSchema>;

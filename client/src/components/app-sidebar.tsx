@@ -11,6 +11,9 @@ import {
   ClipboardList,
   LogOut,
   UserCheck,
+  Briefcase,
+  UserCog,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -82,10 +85,34 @@ const managementItems = [
     roles: ["admin", "staff"],
   },
   {
+    title: "Advisors",
+    url: "/advisors",
+    icon: Briefcase,
+    roles: ["admin", "staff"],
+  },
+  {
+    title: "Unit Leaders",
+    url: "/unit-leaders",
+    icon: Users,
+    roles: ["admin"],
+  },
+  {
+    title: "Staff Members",
+    url: "/staff-members",
+    icon: UserCog,
+    roles: ["admin"],
+  },
+  {
     title: "User Approvals",
     url: "/user-approvals",
     icon: UserCheck,
     roles: ["admin"],
+  },
+  {
+    title: "Membership Status",
+    url: "/membership-status",
+    icon: CreditCard,
+    roles: ["admin", "staff"],
   },
   {
     title: "Audit Trail",
@@ -132,9 +159,11 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
-            <Shield className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <img
+            src="/bsp-logo.svg"
+            alt="BSP Logo"
+            className="h-10 w-10"
+          />
           <div>
             <h2 className="text-lg font-semibold">ScoutSmart</h2>
             <p className="text-xs text-muted-foreground">BSP Management</p>

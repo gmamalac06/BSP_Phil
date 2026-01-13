@@ -1,17 +1,19 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, MapPin, Phone, User, School, Users as UsersIcon, IdCard, Download } from "lucide-react";
+import { Calendar, MapPin, Phone, User, School, Users as UsersIcon, IdCard, X } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
-import { generateScoutIDCard } from "@/lib/id-card";
+import { ScoutIDCard } from "@/components/scout-id-card";
 import type { Scout } from "@shared/schema";
 
 interface ViewScoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   scout: Scout | null;
+  schoolName?: string;
+  unitName?: string;
 }
 
 const statusColors = {
@@ -24,33 +26,38 @@ export function ViewScoutDialog({
   open,
   onOpenChange,
   scout,
+  schoolName,
+  unitName,
 }: ViewScoutDialogProps) {
-  const { toast } = useToast();
+  const [showIDCard, setShowIDCard] = useState(false);
 
   if (!scout) return null;
 
-  const handleDownloadIDCard = async () => {
-    try {
-      await generateScoutIDCard({
-        scout,
-        schoolName: scout.schoolId || undefined,
-        unitName: scout.unitId || undefined,
-        profilePhotoUrl: scout.profilePhoto || undefined,
-      });
-      
-      toast({
-        title: "ID Card Generated",
-        description: "Scout ID card has been downloaded successfully.",
-      });
-    } catch (error) {
-      console.error("Error generating ID card:", error);
-      toast({
-        title: "Generation Failed",
-        description: "Failed to generate ID card. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  // ID Card Preview View
+  if (showIDCard) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Scout ID Card Preview</DialogTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowIDCard(false)}>
+                <X className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex justify-center py-4">
+            <ScoutIDCard
+              scout={scout}
+              schoolName={schoolName}
+              unitName={unitName}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,9 +73,9 @@ export function ViewScoutDialog({
                 <span className="text-sm text-muted-foreground">{scout.gender}</span>
               </div>
             </div>
-            <Button onClick={handleDownloadIDCard} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Download ID Card
+            <Button onClick={() => setShowIDCard(true)} variant="outline" size="sm">
+              <IdCard className="h-4 w-4 mr-2" />
+              View ID Card
             </Button>
           </div>
         </DialogHeader>

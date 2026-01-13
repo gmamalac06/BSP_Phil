@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Edit, Download, Trash2 } from "lucide-react";
+import { Eye, Edit, Download, Trash2, Check } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Scout {
@@ -33,6 +33,7 @@ interface ScoutsTableProps {
   onEdit?: (scout: Scout) => void;
   onDownloadId?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onApprove?: (id: string) => void;
 }
 
 const statusColors = {
@@ -41,7 +42,7 @@ const statusColors = {
   expired: "bg-muted text-muted-foreground",
 };
 
-export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, onEdit, onDownloadId, onDelete }: ScoutsTableProps) {
+export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, onEdit, onDownloadId, onDelete, onApprove }: ScoutsTableProps) {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       onSelectionChange(scouts.map(s => s.id));
@@ -97,8 +98,8 @@ export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, on
             const isSelected = selectedIds.includes(scout.id);
 
             return (
-              <TableRow 
-                key={scout.id} 
+              <TableRow
+                key={scout.id}
                 data-testid={`row-scout-${scout.id}`}
                 className={isSelected ? "bg-muted/50" : ""}
               >
@@ -133,6 +134,18 @@ export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, on
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    {scout.status === "pending" && onApprove && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onApprove(scout.id)}
+                        data-testid={`button-approve-${scout.id}`}
+                        className="text-chart-3 hover:text-chart-3 hover:bg-chart-3/10"
+                        title="Approve Scout"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

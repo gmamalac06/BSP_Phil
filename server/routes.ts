@@ -1,7 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScoutSchema, insertSchoolSchema, insertUnitSchema, insertActivitySchema, insertAnnouncementSchema, insertReportSchema, insertAuditLogSchema } from "@shared/schema";
+import { insertScoutSchema, insertSchoolSchema, insertUnitSchema, insertActivitySchema, insertAnnouncementSchema, insertReportSchema, insertAuditLogSchema, insertCarouselSlideSchema } from "@shared/schema";
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard Stats
@@ -15,6 +16,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Management Routes
+  app.get("/api/users", async (req: Request, res: Response) => {
+    try {
+      const { role } = req.query;
+      if (role) {
+        const users = await storage.getUsersByRole(role as string);
+        return res.json(users);
+      }
+      // If no role specified, maybe return all users? 
+      // For now, let's keep it restricted or just return empty to be safe if not intended.
+      // But actually, we might want to list all users for admin.
+      // Let's implement it for role filtering primarily for now.
+      res.status(400).json({ message: "Role query parameter required" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/users/pending", async (req: Request, res: Response) => {
     try {
       const users = await storage.getPendingUsers();
@@ -29,6 +47,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.updateUser(req.params.id, { isApproved: true });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      // If the user is a scout, also update the corresponding scout record status to 'active'
+      if (user.role === "scout" && user.email) {
+        // Find scout by email
+        const scouts = await storage.getAllScouts();
+        const scout = scouts.find(s => s.email === user.email);
+        if (scout) {
+          await storage.updateScout(scout.id, { status: "active" });
+        }
       }
 
       // Create audit log
@@ -110,6 +138,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public scout lookup by UID (for landing page)
+  // MUST be before /api/scouts/:id to avoid "lookup" being treated as an ID
+  app.get("/api/scouts/lookup/:uid", async (req: Request, res: Response) => {
+    try {
+      const { uid } = req.params;
+      const scouts = await storage.getAllScouts();
+      const scout = scouts.find(s => s.uid.toUpperCase() === uid.toUpperCase());
+
+      if (!scout) {
+        return res.status(404).json({ message: "Scout not found" });
+      }
+
+      // Return only basic, non-sensitive info
+      res.json({
+        id: scout.id,
+        uid: scout.uid,
+        name: scout.name,
+        status: scout.status,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/scouts/:id", async (req: Request, res: Response) => {
     try {
       const scout = await storage.getScout(req.params.id);
@@ -124,7 +176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/scouts", async (req: Request, res: Response) => {
     try {
-      const validatedData = insertScoutSchema.parse(req.body);
+      // Preprocess date fields - convert string to Date if present
+      const data = { ...req.body };
+      console.log("Raw dateOfBirth received:", data.dateOfBirth, "Type:", typeof data.dateOfBirth);
+      if (data.dateOfBirth && typeof data.dateOfBirth === 'string') {
+        data.dateOfBirth = new Date(data.dateOfBirth);
+        console.log("Converted dateOfBirth:", data.dateOfBirth, "Type:", typeof data.dateOfBirth);
+      }
+
+      const validatedData = insertScoutSchema.parse(data);
       const scout = await storage.createScout(validatedData);
 
       // Create audit log
@@ -138,6 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(scout);
     } catch (error: any) {
+      console.error("Scout creation error:", error);
       res.status(400).json({ message: error.message });
     }
   });
@@ -185,6 +246,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: deleted });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Scout approval endpoint - directly approve scout by ID
+  app.post("/api/scouts/:id/approve", async (req: Request, res: Response) => {
+    try {
+      const scout = await storage.updateScout(req.params.id, { status: "active" });
+      if (!scout) {
+        return res.status(404).json({ message: "Scout not found" });
+      }
+
+      // Create audit log
+      await storage.createAuditLog({
+        userId: req.body.approvedBy || null,
+        action: "Approved Scout",
+        details: `Approved scout: ${scout.name} (${scout.uid})`,
+        category: "update",
+        ipAddress: req.ip,
+      });
+
+      res.json(scout);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
   });
 
@@ -568,6 +652,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await storage.initializeDefaultSettings();
       res.json({ message: "Default settings initialized successfully" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ===== CAROUSEL SLIDES ROUTES =====
+
+  // Get all carousel slides (for admin)
+  app.get("/api/carousel-slides", async (req: Request, res: Response) => {
+    try {
+      const slides = await storage.getAllCarouselSlides();
+      res.json(slides);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get active carousel slides (public - for landing page)
+  app.get("/api/carousel-slides/active", async (req: Request, res: Response) => {
+    try {
+      const slides = await storage.getActiveCarouselSlides();
+      res.json(slides);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Create carousel slide
+  app.post("/api/carousel-slides", async (req: Request, res: Response) => {
+    try {
+      // For now, accept JSON body (file upload will be handled via Supabase storage on client)
+      const { title, description, imageUrl, linkUrl, isActive, displayOrder, createdBy } = req.body;
+
+      const slide = await storage.createCarouselSlide({
+        title,
+        description: description || null,
+        imageUrl,
+        linkUrl: linkUrl || null,
+        isActive: isActive !== undefined ? isActive : true,
+        displayOrder: displayOrder || 0,
+        createdBy: createdBy || null,
+      });
+
+      await storage.createAuditLog({
+        userId: createdBy || null,
+        action: "Created Carousel Slide",
+        details: `Created slide: ${title}`,
+        category: "create",
+        ipAddress: req.ip,
+      });
+
+      res.status(201).json(slide);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Update carousel slide
+  app.put("/api/carousel-slides/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const slide = await storage.updateCarouselSlide(id, req.body);
+
+      if (!slide) {
+        return res.status(404).json({ message: "Slide not found" });
+      }
+
+      res.json(slide);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Delete carousel slide
+  app.delete("/api/carousel-slides/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteCarouselSlide(id);
+
+      if (!deleted) {
+        return res.status(404).json({ message: "Slide not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Reorder carousel slide
+  app.post("/api/carousel-slides/:id/reorder", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { direction } = req.body; // "up" or "down"
+
+      const success = await storage.reorderCarouselSlide(id, direction);
+
+      if (!success) {
+        return res.status(400).json({ message: "Failed to reorder slide" });
+      }
+
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

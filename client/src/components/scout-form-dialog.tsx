@@ -148,7 +148,7 @@ export function ScoutFormDialog({
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender *</Label>
                   <Select
-                    value={formData.gender}
+                    value={formData.gender || undefined}
                     onValueChange={(value) => setFormData({ ...formData, gender: value })}
                   >
                     <SelectTrigger id="gender">
@@ -204,9 +204,14 @@ export function ScoutFormDialog({
                   <Input
                     id="contactNumber"
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.contactNumber}
-                    onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
-                    placeholder="+63 XXX XXX XXXX"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      setFormData({ ...formData, contactNumber: value });
+                    }}
+                    placeholder="09XXXXXXXXX"
                   />
                 </div>
                 <div className="space-y-2">
@@ -235,9 +240,14 @@ export function ScoutFormDialog({
                   <Input
                     id="emergencyContact"
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.emergencyContact}
-                    onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
-                    placeholder="+63 XXX XXX XXXX"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      setFormData({ ...formData, emergencyContact: value });
+                    }}
+                    placeholder="09XXXXXXXXX"
                   />
                 </div>
               </div>
@@ -250,7 +260,7 @@ export function ScoutFormDialog({
                 <div className="space-y-2">
                   <Label htmlFor="bloodType">Blood Type</Label>
                   <Select
-                    value={formData.bloodType}
+                    value={formData.bloodType || undefined}
                     onValueChange={(value) => setFormData({ ...formData, bloodType: value })}
                   >
                     <SelectTrigger id="bloodType">
@@ -271,7 +281,7 @@ export function ScoutFormDialog({
                 <div className="space-y-2">
                   <Label htmlFor="rank">Current Rank</Label>
                   <Select
-                    value={formData.rank}
+                    value={formData.rank || undefined}
                     onValueChange={(value) => setFormData({ ...formData, rank: value })}
                   >
                     <SelectTrigger id="rank">

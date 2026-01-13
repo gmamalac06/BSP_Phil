@@ -229,8 +229,14 @@ export function RegistrationForm({ onSubmit, isSubmitting = false }: Registratio
               <Input
                 id="contactNumber"
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={formData.contactNumber}
-                onChange={(e) => updateField("contactNumber", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  updateField("contactNumber", value);
+                }}
+                placeholder="09XXXXXXXXX"
                 data-testid="input-contact"
               />
             </div>
@@ -259,9 +265,14 @@ export function RegistrationForm({ onSubmit, isSubmitting = false }: Registratio
               <Input
                 id="emergencyContact"
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={formData.emergencyContact}
-                onChange={(e) => updateField("emergencyContact", e.target.value)}
-                placeholder="+63 XXX XXX XXXX"
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  updateField("emergencyContact", value);
+                }}
+                placeholder="09XXXXXXXXX"
                 data-testid="input-emergency-contact"
               />
             </div>

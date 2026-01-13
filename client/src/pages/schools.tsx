@@ -34,16 +34,28 @@ export default function Schools() {
   }, [searchQuery]);
 
   const filteredSchools = useMemo(() => {
-    if (!searchQuery) return schools;
+    let result = schools;
 
-    const query = searchQuery.toLowerCase();
-    return schools.filter(
-      (school) =>
-        school.name.toLowerCase().includes(query) ||
-        school.municipality.toLowerCase().includes(query) ||
-        school.principal?.toLowerCase().includes(query)
-    );
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = schools.filter(
+        (school) =>
+          school.name.toLowerCase().includes(query) ||
+          school.municipality.toLowerCase().includes(query) ||
+          school.principal?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort schools with logos first
+    return result.sort((a, b) => {
+      const aHasLogo = !!(a as any).logo;
+      const bHasLogo = !!(b as any).logo;
+      if (aHasLogo && !bHasLogo) return -1;
+      if (!aHasLogo && bHasLogo) return 1;
+      return a.name.localeCompare(b.name); // Secondary sort by name
+    });
   }, [schools, searchQuery]);
+
 
   const visibleSchools = useMemo(() => {
     return filteredSchools.slice(0, visibleCount);

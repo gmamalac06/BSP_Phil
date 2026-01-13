@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -5,6 +6,9 @@ import { Calendar, MapPin, Users, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { useActivityAttendance } from "@/hooks/useAttendance";
 import type { Activity } from "@shared/schema";
+
+// Lazy load MapDisplay for read-only map view
+const MapDisplay = lazy(() => import("@/components/map-selector").then(m => ({ default: m.MapDisplay })));
 
 interface ViewActivityDialogProps {
   open: boolean;
@@ -29,9 +33,12 @@ export function ViewActivityDialog({
   if (!activity) return null;
 
   const attendedCount = attendance.filter((a) => a.attended).length;
-  const attendanceRate = activity.capacity > 0 
-    ? Math.round((attendedCount / activity.capacity) * 100) 
+  const attendanceRate = activity.capacity > 0
+    ? Math.round((attendedCount / activity.capacity) * 100)
     : 0;
+
+  // Check if activity has map coordinates
+  const hasMapLocation = (activity as any).latitude && (activity as any).longitude;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -78,6 +85,30 @@ export function ViewActivityDialog({
               </div>
             </div>
           </div>
+
+          {/* Map Display - Only show if coordinates exist */}
+          {hasMapLocation && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Location Map
+                </h3>
+                <Suspense fallback={
+                  <div className="h-48 rounded-lg border bg-muted flex items-center justify-center">
+                    <p className="text-muted-foreground text-sm">Loading map...</p>
+                  </div>
+                }>
+                  <MapDisplay
+                    latitude={parseFloat((activity as any).latitude)}
+                    longitude={parseFloat((activity as any).longitude)}
+                    height="200px"
+                  />
+                </Suspense>
+              </div>
+            </>
+          )}
 
           <Separator />
 
@@ -157,7 +188,3 @@ export function ViewActivityDialog({
     </Dialog>
   );
 }
-
-
-
-

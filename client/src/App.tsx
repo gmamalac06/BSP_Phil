@@ -24,6 +24,11 @@ import Schools from "@/pages/schools";
 import AuditTrail from "@/pages/audit";
 import UserApprovals from "@/pages/user-approvals";
 import Settings from "@/pages/settings";
+import Advisors from "@/pages/advisors";
+import UnitLeaders from "@/pages/unit-leaders";
+import StaffMembers from "@/pages/staff-members";
+import MembershipStatus from "@/pages/membership-status";
+import CarouselSettings from "@/pages/carousel-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -90,6 +95,13 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      <Route path="/advisors">
+        {() => (
+          <ProtectedRoute>
+            <Advisors />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/audit">
         {() => (
           <ProtectedRoute requireAdmin>
@@ -108,6 +120,34 @@ function Router() {
         {() => (
           <ProtectedRoute requireAdmin>
             <Settings />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/unit-leaders">
+        {() => (
+          <ProtectedRoute requireAdmin>
+            <UnitLeaders />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/staff-members">
+        {() => (
+          <ProtectedRoute requireAdmin>
+            <StaffMembers />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/membership-status">
+        {() => (
+          <ProtectedRoute>
+            <MembershipStatus />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/carousel-settings">
+        {() => (
+          <ProtectedRoute requireAdmin>
+            <CarouselSettings />
           </ProtectedRoute>
         )}
       </Route>

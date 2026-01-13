@@ -1,0 +1,49 @@
+// ADD THIS CODE TO register.tsx at line 621 (after the parentGuardian field, before Scout Affiliation section)
+
+                            {/* Documents */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-sm flex items-center gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    Documents
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paymentProof">Payment Proof</Label>
+                                        <Input
+                                            id="paymentProof"
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    // TODO: Upload to Supabase storage
+                                                    console.log("Payment proof selected:", file.name);
+                                                }
+                                            }}
+                                            disabled={isLoading}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Upload receipt or payment confirmation
+                                        </p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="profilePhoto">Profile Photo</Label>
+                                        <Input
+                                            id="profilePhoto"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    // TODO: Upload to Supabase storage
+                                                    console.log("Profile photo selected:", file.name);
+                                                }
+                                            }}
+                                            disabled={isLoading}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Upload a clear photo (2x2 size recommended)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>

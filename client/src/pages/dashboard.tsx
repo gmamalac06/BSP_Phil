@@ -1,16 +1,48 @@
+import { useLocation } from "wouter";
 import { StatCard } from "@/components/stat-card";
 import { AnnouncementCard } from "@/components/announcement-card";
 import { ActivityCard } from "@/components/activity-card";
-import { Users, UserPlus, Calendar, TrendingUp } from "lucide-react";
+import { ScoutIDCard } from "@/components/scout-id-card";
+import { Users, UserPlus, Calendar, TrendingUp, IdCard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStats } from "@/hooks/useStats";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { useActivities } from "@/hooks/useActivities";
+import { useAuth } from "@/hooks/useAuth";
+import { useScouts } from "@/hooks/useScouts";
+import { useSchools } from "@/hooks/useSchools";
+import { useUnits } from "@/hooks/useUnits";
+import { useMemo } from "react";
 
 export default function Dashboard() {
+  const [, setLocation] = useLocation();
   const { data: statsData, isLoading: statsLoading } = useStats();
   const { data: announcementsData = [], isLoading: announcementsLoading } = useAnnouncements();
   const { data: activitiesData = [], isLoading: activitiesLoading } = useActivities("upcoming");
+  const { user } = useAuth();
+  const { data: scouts = [] } = useScouts();
+  const { data: schools = [] } = useSchools();
+  const { data: units = [] } = useUnits();
+
+  // Check if current user is a scout
+  const isScoutUser = user?.role === "scout";
+
+  // Find the scout record for the current user (matching by email)
+  const currentScout = useMemo(() => {
+    if (!isScoutUser || !user?.email) return null;
+    return scouts.find(s => s.email === user.email) || null;
+  }, [isScoutUser, user?.email, scouts]);
+
+  // Get school and unit names for the current scout
+  const scoutSchoolName = useMemo(() => {
+    if (!currentScout?.schoolId) return undefined;
+    return schools.find(s => s.id === currentScout.schoolId)?.name;
+  }, [currentScout, schools]);
+
+  const scoutUnitName = useMemo(() => {
+    if (!currentScout?.unitId) return undefined;
+    return units.find(u => u.id === currentScout.unitId)?.name;
+  }, [currentScout, units]);
 
   const stats = statsData ? [
     {
@@ -71,11 +103,33 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <StatCard key={stat.title} {...stat} />
-        ))}
-      </div>
+      {/* Scout ID Card - Show at top for scout role users */}
+      {isScoutUser && currentScout && (
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <IdCard className="h-5 w-5 text-primary" />
+              Your Scout ID Card
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <ScoutIDCard
+              scout={currentScout}
+              schoolName={scoutSchoolName}
+              unitName={scoutUnitName}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stats - Only show for non-scout users (admin/staff) */}
+      {!isScoutUser && (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <StatCard key={stat.title} {...stat} />
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
@@ -89,7 +143,7 @@ export default function Dashboard() {
                   <AnnouncementCard
                     key={announcement.id}
                     announcement={announcement}
-                    onView={(id) => console.log("View announcement:", id)}
+                    onView={() => setLocation("/announcements")}
                   />
                 ))
               ) : (
@@ -112,8 +166,8 @@ export default function Dashboard() {
                   <ActivityCard
                     key={activity.id}
                     activity={activity}
-                    onMarkAttendance={(id) => console.log("Mark attendance:", id)}
-                    onViewDetails={(id) => console.log("View details:", id)}
+                    onMarkAttendance={() => setLocation("/activities")}
+                    onViewDetails={() => setLocation("/activities")}
                   />
                 ))
               ) : (

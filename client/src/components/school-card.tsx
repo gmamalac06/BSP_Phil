@@ -11,7 +11,7 @@ import {
 import type { School as SchoolType } from "@shared/schema";
 
 interface SchoolCardProps {
-  school: SchoolType;
+  school: SchoolType & { logo?: string | null; schoolNumber?: string | null };
   onEdit?: () => void;
   onViewScouts?: () => void;
   onDelete?: () => void;
@@ -22,14 +22,26 @@ export function SchoolCard({ school, onEdit, onViewScouts, onDelete }: SchoolCar
     <Card className="hover-elevate" data-testid={`card-school-${school.id}`}>
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3">
         <div className="flex items-start gap-3 flex-1">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
-            <School className="h-5 w-5 text-primary" />
-          </div>
+          {/* School Logo or Placeholder */}
+          {school.logo ? (
+            <img
+              src={school.logo}
+              alt={`${school.name} logo`}
+              className="h-12 w-12 rounded-md object-contain bg-muted"
+            />
+          ) : (
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10">
+              <School className="h-6 w-6 text-primary" />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold mb-1" data-testid={`text-school-name-${school.id}`}>
               {school.name}
             </h3>
             <p className="text-sm text-muted-foreground">{school.municipality}</p>
+            {school.schoolNumber && (
+              <p className="text-xs text-muted-foreground mt-0.5">ID: {school.schoolNumber}</p>
+            )}
           </div>
         </div>
         <DropdownMenu>

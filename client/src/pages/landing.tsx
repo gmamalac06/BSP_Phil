@@ -1,32 +1,188 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Target, Eye, Users, Award, TrendingUp } from "lucide-react";
+import { Shield, Target, Eye, Users, Award, TrendingUp, Search, IdCard } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { EventCarousel } from "@/components/event-carousel";
+import type { User } from "@supabase/supabase-js";
+
+// Carousel section component for landing page
+function EventCarouselSection() {
+  const { data: slides = [] } = useQuery({
+    queryKey: ["carousel-slides-active"],
+    queryFn: async () => {
+      const response = await fetch("/api/carousel-slides/active");
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
+  if (slides.length === 0) return null;
+
+  return (
+    <section className="py-12 px-4 bg-muted/30">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-8">Upcoming Events</h2>
+        <EventCarousel slides={slides} />
+      </div>
+    </section>
+  );
+}
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [scoutIdInput, setScoutIdInput] = useState("");
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleDashboardClick = () => {
+    // Get user metadata to determine role
+    const role = user?.user_metadata?.role || "user";
+
+    // Route to appropriate dashboard based on role
+    switch (role) {
+      case "admin":
+        setLocation("/dashboard");
+        break;
+      case "staff":
+        setLocation("/scouts");
+        break;
+      case "unit_leader":
+        setLocation("/units");
+        break;
+      case "scout":
+        setLocation("/dashboard"); // Scout dashboard
+        break;
+      default:
+        setLocation("/dashboard");
+    }
+  };
+
+  const handleScoutIdLookup = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!scoutIdInput.trim()) {
+      toast({
+        title: "Enter Scout ID",
+        description: "Please enter your Scout ID (e.g., BSP-2026-123456)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLookingUp(true);
+    try {
+      // Use server API instead of direct Supabase (avoids RLS issues)
+      const response = await fetch(`/api/scouts/lookup/${encodeURIComponent(scoutIdInput.trim())}`);
+
+      if (!response.ok) {
+        toast({
+          title: "Scout Not Found",
+          description: "No scout found with that ID. Please check and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const scout = await response.json();
+
+      toast({
+        title: `Welcome, ${scout.name}!`,
+        description: `Status: ${scout.status.charAt(0).toUpperCase() + scout.status.slice(1)}`,
+      });
+
+      // Navigate to membership status page
+      setLocation("/membership-status");
+    } catch (error) {
+      toast({
+        title: "Lookup Failed",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/10 via-background to-chart-3/10 py-20 px-4">
+      <section className="bg-gradient-to-br from-primary/10 via-background to-chart-3/10 py-20 px-4 relative">
+        {/* Scout ID Lookup - Top Right */}
+        <div className="absolute top-4 right-4 md:top-8 md:right-8">
+          <form onSubmit={handleScoutIdLookup} className="flex gap-2 items-center">
+            <div className="relative">
+              <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Enter Scout ID"
+                className="pl-9 w-40 md:w-48"
+                value={scoutIdInput}
+                onChange={(e) => setScoutIdInput(e.target.value)}
+                disabled={isLookingUp}
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isLookingUp}
+              title="Check Membership Status"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
+
         <div className="max-w-6xl mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <div className="h-24 w-24 bg-primary/10 rounded-full flex items-center justify-center">
-              <Shield className="h-16 w-16 text-primary" />
-            </div>
+            <img
+              src="/bsp-logo.svg"
+              alt="Boy Scouts of the Philippines"
+              className="h-32 w-32"
+            />
           </div>
           <h1 className="text-5xl font-bold mb-4">ScoutSmart</h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Empowering the Boy Scouts of the Philippines with modern management solutions
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" onClick={() => setLocation("/login")}>
-              Sign In
-            </Button>
-            <Button size="lg" variant="secondary" onClick={() => setLocation("/register")}>
-              Register
-            </Button>
+            {!loading && (
+              user ? (
+                // Show Dashboard button when logged in
+                <Button size="lg" onClick={handleDashboardClick}>
+                  Go to Dashboard
+                </Button>
+              ) : (
+                // Show Sign In and Register when not logged in
+                <>
+                  <Button size="lg" onClick={() => setLocation("/login")}>
+                    Sign In
+                  </Button>
+                  <Button size="lg" variant="secondary" onClick={() => setLocation("/register")}>
+                    Register
+                  </Button>
+                </>
+              )
+            )}
             <Button size="lg" variant="outline" onClick={() => {
               document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
             }}>
@@ -35,6 +191,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Event Carousel Section */}
+      <EventCarouselSection />
 
       {/* About Us Section */}
       <section id="about" className="py-20 px-4 bg-background">

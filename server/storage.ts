@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, desc, count, sql } from "drizzle-orm";
+import { eq, and, desc, asc, count, sql } from "drizzle-orm";
 import {
   type User,
   type InsertUser,
@@ -21,6 +21,8 @@ import {
   type InsertActivityAttendance,
   type Settings,
   type InsertSettings,
+  type CarouselSlide,
+  type InsertCarouselSlide,
   users,
   scouts,
   schools,
@@ -31,6 +33,7 @@ import {
   auditLogs,
   activityAttendance,
   settings,
+  carouselSlides,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -41,7 +44,9 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   getPendingUsers(): Promise<User[]>;
+  getUsersByRole(role: string): Promise<User[]>;
   deleteUser(id: string): Promise<boolean>;
+
 
   // Scouts
   getScout(id: string): Promise<Scout | undefined>;
@@ -114,6 +119,14 @@ export interface IStorage {
   createSetting(setting: InsertSettings): Promise<Settings>;
   initializeDefaultSettings(): Promise<void>;
 
+  // Carousel Slides
+  getAllCarouselSlides(): Promise<CarouselSlide[]>;
+  getActiveCarouselSlides(): Promise<CarouselSlide[]>;
+  createCarouselSlide(slide: InsertCarouselSlide): Promise<CarouselSlide>;
+  updateCarouselSlide(id: string, slide: Partial<InsertCarouselSlide>): Promise<CarouselSlide | undefined>;
+  deleteCarouselSlide(id: string): Promise<boolean>;
+  reorderCarouselSlide(id: string, direction: "up" | "down"): Promise<boolean>;
+
   // Dashboard Stats
   getDashboardStats(): Promise<{
     totalScouts: number;
@@ -152,6 +165,10 @@ export class DatabaseStorage implements IStorage {
 
   async getPendingUsers(): Promise<User[]> {
     return await db.select().from(users).where(eq(users.isApproved, false)).orderBy(desc(users.createdAt));
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return await db.select().from(users).where(and(eq(users.role, role), eq(users.isApproved, true))).orderBy(desc(users.createdAt));
   }
 
   async deleteUser(id: string): Promise<boolean> {
@@ -463,6 +480,58 @@ export class DatabaseStorage implements IStorage {
       pendingScouts: pendingScoutsResult?.count || 0,
       upcomingActivities: upcomingActivitiesResult?.count || 0,
     };
+  }
+
+  // Carousel Slides
+  async getAllCarouselSlides(): Promise<CarouselSlide[]> {
+    return await db.select().from(carouselSlides).orderBy(asc(carouselSlides.displayOrder));
+  }
+
+  async getActiveCarouselSlides(): Promise<CarouselSlide[]> {
+    return await db.select().from(carouselSlides)
+      .where(eq(carouselSlides.isActive, true))
+      .orderBy(asc(carouselSlides.displayOrder));
+  }
+
+  async createCarouselSlide(slide: InsertCarouselSlide): Promise<CarouselSlide> {
+    // Get current max order
+    const existing = await this.getAllCarouselSlides();
+    const maxOrder = existing.length > 0 ? Math.max(...existing.map(s => s.displayOrder)) + 1 : 0;
+
+    const result = await db.insert(carouselSlides).values({
+      ...slide,
+      displayOrder: slide.displayOrder ?? maxOrder,
+    }).returning();
+    return result[0];
+  }
+
+  async updateCarouselSlide(id: string, slideData: Partial<InsertCarouselSlide>): Promise<CarouselSlide | undefined> {
+    const result = await db.update(carouselSlides).set(slideData).where(eq(carouselSlides.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteCarouselSlide(id: string): Promise<boolean> {
+    const result = await db.delete(carouselSlides).where(eq(carouselSlides.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async reorderCarouselSlide(id: string, direction: "up" | "down"): Promise<boolean> {
+    const slides = await this.getAllCarouselSlides();
+    const currentIndex = slides.findIndex(s => s.id === id);
+
+    if (currentIndex === -1) return false;
+    if (direction === "up" && currentIndex === 0) return false;
+    if (direction === "down" && currentIndex === slides.length - 1) return false;
+
+    const swapIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const currentSlide = slides[currentIndex];
+    const swapSlide = slides[swapIndex];
+
+    // Swap display orders
+    await db.update(carouselSlides).set({ displayOrder: swapSlide.displayOrder }).where(eq(carouselSlides.id, currentSlide.id));
+    await db.update(carouselSlides).set({ displayOrder: currentSlide.displayOrder }).where(eq(carouselSlides.id, swapSlide.id));
+
+    return true;
   }
 }
 
