@@ -12,25 +12,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Edit, Download, Trash2, Check } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface Scout {
-  id: string;
-  uid: string;
-  name: string;
-  unit: string;
-  school: string;
-  municipality: string;
-  gender: string;
-  status: "active" | "pending" | "expired";
-  membershipYears: number;
-  avatar?: string;
-}
+import type { ScoutWithRelations } from "@/hooks/useScouts";
 
 interface ScoutsTableProps {
-  scouts: Scout[];
+  scouts: ScoutWithRelations[];
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
-  onView?: (scout: Scout) => void;
-  onEdit?: (scout: Scout) => void;
+  onView?: (scout: ScoutWithRelations) => void;
+  onEdit?: (scout: ScoutWithRelations) => void;
   onDownloadId?: (id: string) => void;
   onDelete?: (id: string) => void;
   onApprove?: (id: string) => void;
@@ -113,7 +102,7 @@ export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, on
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={scout.avatar} alt={scout.name} />
+                      <AvatarImage src={scout.profilePhoto || undefined} alt={scout.name} />
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                     <span className="font-medium">{scout.name}</span>
@@ -122,13 +111,13 @@ export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, on
                 <TableCell>
                   <code className="text-xs font-mono">{scout.uid}</code>
                 </TableCell>
-                <TableCell>{scout.unit}</TableCell>
-                <TableCell>{scout.school}</TableCell>
+                <TableCell>{scout.unit?.name || "-"}</TableCell>
+                <TableCell>{scout.school?.name || "-"}</TableCell>
                 <TableCell>{scout.municipality}</TableCell>
                 <TableCell>{scout.gender}</TableCell>
                 <TableCell>{scout.membershipYears}</TableCell>
                 <TableCell>
-                  <Badge className={statusColors[scout.status]}>
+                  <Badge className={statusColors[scout.status as keyof typeof statusColors] || "bg-muted"}>
                     {scout.status.charAt(0).toUpperCase() + scout.status.slice(1)}
                   </Badge>
                 </TableCell>

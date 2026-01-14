@@ -11,25 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { validateFile } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
+import { carouselService } from "@/lib/supabase-db";
 import { useLocation } from "wouter";
-
-interface CarouselSlide {
-    id: string;
-    title: string;
-    description: string | null;
-    imageUrl: string;
-    linkUrl: string | null;
-    displayOrder: number;
-    isActive: boolean;
-    createdAt: string;
-}
-
-// Fetch slides
-async function fetchSlides(): Promise<CarouselSlide[]> {
-    const response = await fetch("/api/carousel-slides");
-    if (!response.ok) throw new Error("Failed to fetch slides");
-    return response.json();
-}
+import type { CarouselSlide } from "@shared/schema";
 
 export default function CarouselSettings() {
     const [, setLocation] = useLocation();
@@ -49,18 +33,44 @@ export default function CarouselSettings() {
 
     const { data: slides = [], isLoading } = useQuery({
         queryKey: ["carousel-slides"],
-        queryFn: fetchSlides,
+        queryFn: () => carouselService.getAll(),
     });
+
+    // Upload image to Supabase Storage
+    const uploadImage = async (file: File): Promise<string> => {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `carousel-${Date.now()}.${fileExt}`;
+        const filePath = `carousel-slides/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from("carousel-slides")
+            .upload(filePath, file);
+
+        if (uploadError) throw new Error(uploadError.message);
+
+        const { data: { publicUrl } } = supabase.storage
+            .from("carousel-slides")
+            .getPublicUrl(filePath);
+
+        return publicUrl;
+    };
 
     // Create slide mutation
     const createSlide = useMutation({
-        mutationFn: async (data: FormData) => {
-            const response = await fetch("/api/carousel-slides", {
-                method: "POST",
-                body: data,
+        mutationFn: async () => {
+            if (!imageFile) throw new Error("Image is required");
+
+            const imageUrl = await uploadImage(imageFile);
+            const maxOrder = Math.max(0, ...slides.map(s => s.displayOrder));
+
+            return carouselService.create({
+                title: formData.title,
+                description: formData.description || null,
+                imageUrl,
+                linkUrl: formData.linkUrl || null,
+                displayOrder: maxOrder + 1,
+                isActive: formData.isActive,
             });
-            if (!response.ok) throw new Error("Failed to create slide");
-            return response.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
@@ -74,13 +84,20 @@ export default function CarouselSettings() {
 
     // Update slide mutation
     const updateSlide = useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: FormData }) => {
-            const response = await fetch(`/api/carousel-slides/${id}`, {
-                method: "PUT",
-                body: data,
+        mutationFn: async (id: string) => {
+            let imageUrl = editingSlide?.imageUrl;
+
+            if (imageFile) {
+                imageUrl = await uploadImage(imageFile);
+            }
+
+            return carouselService.update(id, {
+                title: formData.title,
+                description: formData.description || null,
+                imageUrl,
+                linkUrl: formData.linkUrl || null,
+                isActive: formData.isActive,
             });
-            if (!response.ok) throw new Error("Failed to update slide");
-            return response.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
@@ -94,12 +111,7 @@ export default function CarouselSettings() {
 
     // Delete slide mutation
     const deleteSlide = useMutation({
-        mutationFn: async (id: string) => {
-            const response = await fetch(`/api/carousel-slides/${id}`, {
-                method: "DELETE",
-            });
-            if (!response.ok) throw new Error("Failed to delete slide");
-        },
+        mutationFn: (id: string) => carouselService.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
             toast({ title: "Success", description: "Slide deleted successfully" });
@@ -112,12 +124,18 @@ export default function CarouselSettings() {
     // Reorder slide mutation
     const reorderSlide = useMutation({
         mutationFn: async ({ id, direction }: { id: string; direction: "up" | "down" }) => {
-            const response = await fetch(`/api/carousel-slides/${id}/reorder`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ direction }),
-            });
-            if (!response.ok) throw new Error("Failed to reorder slide");
+            const sortedSlides = [...slides].sort((a, b) => a.displayOrder - b.displayOrder);
+            const currentIndex = sortedSlides.findIndex(s => s.id === id);
+            const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+            if (targetIndex < 0 || targetIndex >= sortedSlides.length) return;
+
+            const currentSlide = sortedSlides[currentIndex];
+            const targetSlide = sortedSlides[targetIndex];
+
+            // Swap display orders
+            await carouselService.update(currentSlide.id, { displayOrder: targetSlide.displayOrder });
+            await carouselService.update(targetSlide.id, { displayOrder: currentSlide.displayOrder });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
@@ -173,19 +191,10 @@ export default function CarouselSettings() {
             return;
         }
 
-        const data = new FormData();
-        data.append("title", formData.title);
-        data.append("description", formData.description);
-        data.append("linkUrl", formData.linkUrl);
-        data.append("isActive", formData.isActive.toString());
-        if (imageFile) {
-            data.append("image", imageFile);
-        }
-
         if (editingSlide) {
-            updateSlide.mutate({ id: editingSlide.id, data });
+            updateSlide.mutate(editingSlide.id);
         } else {
-            createSlide.mutate(data);
+            createSlide.mutate();
         }
     };
 

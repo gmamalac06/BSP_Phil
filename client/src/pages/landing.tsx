@@ -8,17 +8,14 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { EventCarousel } from "@/components/event-carousel";
+import { carouselService, scoutsService } from "@/lib/supabase-db";
 import type { User } from "@supabase/supabase-js";
 
 // Carousel section component for landing page
 function EventCarouselSection() {
   const { data: slides = [] } = useQuery({
     queryKey: ["carousel-slides-active"],
-    queryFn: async () => {
-      const response = await fetch("/api/carousel-slides/active");
-      if (!response.ok) return [];
-      return response.json();
-    },
+    queryFn: () => carouselService.getActive(),
   });
 
   if (slides.length === 0) return null;
@@ -92,10 +89,10 @@ export default function Landing() {
 
     setIsLookingUp(true);
     try {
-      // Use server API instead of direct Supabase (avoids RLS issues)
-      const response = await fetch(`/api/scouts/lookup/${encodeURIComponent(scoutIdInput.trim())}`);
+      // Use Supabase directly for scout lookup
+      const scout = await scoutsService.getByUid(scoutIdInput.trim());
 
-      if (!response.ok) {
+      if (!scout) {
         toast({
           title: "Scout Not Found",
           description: "No scout found with that ID. Please check and try again.",
@@ -103,8 +100,6 @@ export default function Landing() {
         });
         return;
       }
-
-      const scout = await response.json();
 
       toast({
         title: `Welcome, ${scout.name}!`,

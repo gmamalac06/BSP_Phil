@@ -4,7 +4,7 @@ import { FilterPanel } from "@/components/filter-panel";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useScouts, useCreateScout, useUpdateScout, useDeleteScout } from "@/hooks/useScouts";
+import { useScouts, useCreateScout, useUpdateScout, useDeleteScout, type ScoutWithRelations } from "@/hooks/useScouts";
 import { ScoutFormDialog } from "@/components/scout-form-dialog";
 import { ViewScoutDialog } from "@/components/view-scout-dialog";
 import { DoubleConfirmDialog } from "@/components/double-confirm-dialog";
@@ -14,13 +14,14 @@ import { generateScoutIDCard } from "@/lib/id-card";
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Scout } from "@shared/schema";
+import { scoutsService } from "@/lib/supabase-db";
 
 export default function Scouts() {
   const [activeTab, setActiveTab] = useState("all");
   const [filters, setFilters] = useState<any>({});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingScout, setEditingScout] = useState<Scout | null>(null);
-  const [viewingScout, setViewingScout] = useState<Scout | null>(null);
+  const [editingScout, setEditingScout] = useState<ScoutWithRelations | null>(null);
+  const [viewingScout, setViewingScout] = useState<ScoutWithRelations | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deletingScoutId, setDeletingScoutId] = useState<string | null>(null);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -34,13 +35,7 @@ export default function Scouts() {
 
   // Scout approval mutation
   const approveScout = useMutation({
-    mutationFn: async (scoutId: string) => {
-      const res = await fetch(`/api/scouts/${scoutId}/approve`, {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Failed to approve scout");
-      return res.json();
-    },
+    mutationFn: (scoutId: string) => scoutsService.update(scoutId, { status: "active" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scouts"] });
       toast({
@@ -119,7 +114,7 @@ export default function Scouts() {
     }
   };
 
-  const handleViewScout = (scout: Scout) => {
+  const handleViewScout = (scout: ScoutWithRelations) => {
     setViewingScout(scout);
   };
 
@@ -141,8 +136,8 @@ export default function Scouts() {
     try {
       await generateScoutIDCard({
         scout,
-        schoolName: scout.schoolId || undefined,
-        unitName: scout.unitId || undefined,
+        schoolName: scout.school?.name,
+        unitName: scout.unit?.name,
         profilePhotoUrl: scout.profilePhoto || undefined,
       });
 

@@ -5,6 +5,7 @@ import { Download, RotateCw, Phone, User, Shield } from "lucide-react";
 import { useState } from "react";
 import type { Scout } from "@shared/schema";
 import { generateScoutIDCard } from "@/lib/id-card";
+import { safeGetYear } from "@/lib/safe-date";
 
 interface ScoutIDCardProps {
     scout: Scout;
@@ -118,7 +119,7 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
 
                             {/* Footer */}
                             <div className="px-4 pb-3 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                                <span>Member since {new Date(scout.createdAt).getFullYear()}</span>
+                                <span>Member since {safeGetYear((scout as any).created_at || scout.createdAt)}</span>
                                 <span>{scout.membershipYears || 0} year(s)</span>
                             </div>
                         </div>

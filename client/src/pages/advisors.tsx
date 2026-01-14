@@ -13,6 +13,9 @@ import { Shield, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import type { User, School, Unit } from "@shared/schema";
+import { safeToLocaleDateString } from "@/lib/safe-date";
+import { schoolsService, unitsService } from "@/lib/supabase-db";
+import { supabase } from "@/lib/supabase";
 
 export default function Staffs() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -21,30 +24,26 @@ export default function Staffs() {
     const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
         queryKey: ["users", "staff"],
         queryFn: async () => {
-            const res = await fetch("/api/users?role=staff");
-            if (!res.ok) throw new Error("Failed to fetch staff");
-            return res.json();
+            const { data, error } = await supabase
+                .from("users")
+                .select("*")
+                .eq("role", "staff")
+                .order("username");
+            if (error) throw new Error(error.message);
+            return data || [];
         },
     });
 
     // Fetch schools for mapping
     const { data: schools = [] } = useQuery<School[]>({
         queryKey: ["schools"],
-        queryFn: async () => {
-            const res = await fetch("/api/schools");
-            if (!res.ok) throw new Error("Failed to fetch schools");
-            return res.json();
-        },
+        queryFn: () => schoolsService.getAll(),
     });
 
     // Fetch units for mapping (to find which unit the advisor leads)
     const { data: units = [] } = useQuery<Unit[]>({
         queryKey: ["units"],
-        queryFn: async () => {
-            const res = await fetch("/api/units");
-            if (!res.ok) throw new Error("Failed to fetch units");
-            return res.json();
-        },
+        queryFn: () => unitsService.getAll(),
     });
 
     const getSchoolName = (id?: string | null) => {
@@ -146,7 +145,7 @@ export default function Staffs() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        {new Date(user.createdAt).toLocaleDateString()}
+                                        {safeToLocaleDateString(user.createdAt)}
                                     </TableCell>
                                 </TableRow>
                             ))}

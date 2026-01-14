@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import type { Announcement } from "@shared/schema";
 
 interface ViewAnnouncementDialogProps {
@@ -37,7 +37,7 @@ export function ViewAnnouncementDialog({
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>By {announcement.author}</span>
             <span>•</span>
-            <span>{format(new Date(announcement.createdAt), "PPP")}</span>
+            <span>{safeFormat((announcement as any).created_at || announcement.createdAt, "PPP")}</span>
           </div>
           <div className="prose prose-sm max-w-none">
             <p className="whitespace-pre-wrap">{announcement.content}</p>

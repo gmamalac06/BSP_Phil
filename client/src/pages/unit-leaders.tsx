@@ -5,24 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Users, Building, CheckCircle, XCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
+import { supabase } from "@/lib/supabase";
+import { safeToLocaleDateString } from "@/lib/safe-date";
 
 interface User {
     id: string;
     email: string;
     username: string;
     role: string;
-    isApproved: boolean;
-    schoolId?: string;
-    unitId?: string;
-    createdAt: string;
-}
-
-async function fetchUsersByRole(role: string): Promise<User[]> {
-    const response = await fetch(`/api/users?role=${role}`);
-    if (!response.ok) {
-        throw new Error("Failed to fetch users");
-    }
-    return response.json();
+    is_approved: boolean;
+    school_id?: string;
+    unit_id?: string;
+    created_at: string;
 }
 
 export default function UnitLeaders() {
@@ -30,7 +24,15 @@ export default function UnitLeaders() {
 
     const { data: unitLeaders = [], isLoading } = useQuery({
         queryKey: ["users", "unit_leader"],
-        queryFn: () => fetchUsersByRole("unit_leader"),
+        queryFn: async (): Promise<User[]> => {
+            const { data, error } = await supabase
+                .from("users")
+                .select("*")
+                .eq("role", "unit_leader")
+                .order("username");
+            if (error) throw new Error(error.message);
+            return data || [];
+        },
     });
 
     const filteredLeaders = useMemo(() => {
@@ -85,7 +87,7 @@ export default function UnitLeaders() {
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between">
                                     <CardTitle className="text-lg font-semibold">{leader.username}</CardTitle>
-                                    {leader.isApproved ? (
+                                    {leader.is_approved ? (
                                         <Badge variant="default" className="bg-green-500">
                                             <CheckCircle className="h-3 w-3 mr-1" />
                                             Approved
@@ -102,14 +104,14 @@ export default function UnitLeaders() {
                                 <div className="text-sm text-muted-foreground">
                                     <span className="font-medium">Email:</span> {leader.email}
                                 </div>
-                                {leader.unitId && (
+                                {leader.unit_id && (
                                     <div className="text-sm text-muted-foreground flex items-center gap-1">
                                         <Building className="h-3 w-3" />
-                                        <span>Unit ID: {leader.unitId}</span>
+                                        <span>Unit ID: {leader.unit_id}</span>
                                     </div>
                                 )}
                                 <div className="text-xs text-muted-foreground">
-                                    Registered: {new Date(leader.createdAt).toLocaleDateString()}
+                                    Registered: {safeToLocaleDateString(leader.created_at)}
                                 </div>
                             </CardContent>
                         </Card>

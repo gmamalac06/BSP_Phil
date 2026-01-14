@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, MapPin, Phone, User, School, Users as UsersIcon, IdCard, X } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { ScoutIDCard } from "@/components/scout-id-card";
-import type { Scout } from "@shared/schema";
+import type { ScoutWithRelations } from "@/hooks/useScouts";
 
 interface ViewScoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  scout: Scout | null;
+  scout: ScoutWithRelations | null;
   schoolName?: string;
   unitName?: string;
 }
@@ -101,7 +101,7 @@ export function ViewScoutDialog({
                   <Calendar className="h-4 w-4 text-muted-foreground mt-1" />
                   <div>
                     <div className="text-xs text-muted-foreground">Date of Birth</div>
-                    <div className="text-sm">{format(new Date(scout.dateOfBirth), "PPP")}</div>
+                    <div className="text-sm">{safeFormat((scout as any).date_of_birth || scout.dateOfBirth, "PPP")}</div>
                   </div>
                 </div>
               )}
@@ -162,14 +162,14 @@ export function ViewScoutDialog({
                 <School className="h-4 w-4 text-muted-foreground mt-1" />
                 <div>
                   <div className="text-xs text-muted-foreground">School</div>
-                  <div className="text-sm">{scout.schoolId || "Not assigned"}</div>
+                  <div className="text-sm">{scout.school?.name || schoolName || "Not assigned"}</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <UsersIcon className="h-4 w-4 text-muted-foreground mt-1" />
                 <div>
                   <div className="text-xs text-muted-foreground">Unit</div>
-                  <div className="text-sm">{scout.unitId || "Not assigned"}</div>
+                  <div className="text-sm">{scout.unit?.name || unitName || "Not assigned"}</div>
                 </div>
               </div>
             </div>
@@ -187,7 +187,7 @@ export function ViewScoutDialog({
           {/* Registration Date */}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>Registered on {format(new Date(scout.createdAt), "PPP")}</span>
+            <span>Registered on {safeFormat((scout as any).created_at || scout.createdAt, "PPP")}</span>
           </div>
         </div>
       </DialogContent>

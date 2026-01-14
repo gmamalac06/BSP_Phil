@@ -13,6 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 import type { User, School, Unit } from "@shared/schema";
+import { usersService, schoolsService, unitsService } from "@/lib/supabase-db";
+import { safeToLocaleDateString } from "@/lib/safe-date";
+import { supabase } from "@/lib/supabase";
 
 export default function UserApprovals() {
     const { toast } = useToast();
@@ -21,31 +24,19 @@ export default function UserApprovals() {
     // Fetch pending users
     const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
         queryKey: ["users", "pending"],
-        queryFn: async () => {
-            const res = await fetch("/api/users/pending");
-            if (!res.ok) throw new Error("Failed to fetch pending users");
-            return res.json();
-        },
+        queryFn: () => usersService.getPendingApprovals(),
     });
 
     // Fetch schools for mapping
     const { data: schools = [] } = useQuery<School[]>({
         queryKey: ["schools"],
-        queryFn: async () => {
-            const res = await fetch("/api/schools");
-            if (!res.ok) throw new Error("Failed to fetch schools");
-            return res.json();
-        },
+        queryFn: () => schoolsService.getAll(),
     });
 
     // Fetch units for mapping
     const { data: units = [] } = useQuery<Unit[]>({
         queryKey: ["units"],
-        queryFn: async () => {
-            const res = await fetch("/api/units");
-            if (!res.ok) throw new Error("Failed to fetch units");
-            return res.json();
-        },
+        queryFn: () => unitsService.getAll(),
     });
 
     const getSchoolName = (id?: string | null) => {
@@ -59,13 +50,7 @@ export default function UserApprovals() {
     };
 
     const approveMutation = useMutation({
-        mutationFn: async (userId: string) => {
-            const res = await fetch(`/api/users/${userId}/approve`, {
-                method: "POST",
-            });
-            if (!res.ok) throw new Error("Failed to approve user");
-            return res.json();
-        },
+        mutationFn: (userId: string) => usersService.approve(userId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["users", "pending"] });
             toast({
@@ -84,11 +69,10 @@ export default function UserApprovals() {
 
     const rejectMutation = useMutation({
         mutationFn: async (userId: string) => {
-            const res = await fetch(`/api/users/${userId}`, {
-                method: "DELETE",
-            });
-            if (!res.ok) throw new Error("Failed to reject user");
-            return res.json();
+            // Delete from users table
+            const { error } = await supabase.from("users").delete().eq("id", userId);
+            if (error) throw new Error(error.message);
+            // Note: Auth user cleanup would typically need admin API or edge function
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["users", "pending"] });
@@ -183,7 +167,7 @@ export default function UserApprovals() {
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        {new Date(user.createdAt).toLocaleDateString()}
+                                        {safeToLocaleDateString(user.createdAt)}
                                     </TableCell>
                                     <TableCell className="text-right space-x-2">
                                         <Button

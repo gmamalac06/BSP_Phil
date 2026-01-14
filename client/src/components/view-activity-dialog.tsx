@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, MapPin, Users, TrendingUp } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import { useActivityAttendance } from "@/hooks/useAttendance";
 import type { Activity } from "@shared/schema";
 
@@ -73,7 +73,7 @@ export function ViewActivityDialog({
                 <Calendar className="h-4 w-4 text-muted-foreground mt-1" />
                 <div>
                   <div className="text-xs text-muted-foreground">Date & Time</div>
-                  <div className="text-sm">{format(new Date(activity.date), "PPP p")}</div>
+                  <div className="text-sm">{safeFormat((activity as any).date, "PPP p")}</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -181,7 +181,7 @@ export function ViewActivityDialog({
           {/* Meta Information */}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>Created on {format(new Date(activity.createdAt), "PPP")}</span>
+            <span>Created on {safeFormat((activity as any).created_at || activity.createdAt, "PPP")}</span>
           </div>
         </div>
       </DialogContent>

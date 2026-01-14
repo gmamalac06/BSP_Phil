@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MessageSquare, MoreVertical, Edit, Trash2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { safeFormatDistanceToNow } from "@/lib/safe-date";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +74,7 @@ export function AnnouncementCard({ announcement, onView, onEdit, onDelete }: Ann
         <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>{formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}</span>
+            <span>{safeFormatDistanceToNow((announcement as any).created_at || announcement.createdAt)}</span>
           </div>
           <span>By {announcement.author}</span>
         </div>

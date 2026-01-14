@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { scoutsService } from "@/lib/supabase-db";
 import { Shield, Users, UserCheck, User, Search, ChevronLeft, ChevronRight, School, AlertTriangle, FileText } from "lucide-react";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
@@ -288,17 +289,9 @@ export default function Register() {
                     status: "pending",
                     membershipYears: 0,
                 };
-                // Use API endpoint for proper validation and consistency
-                const response = await fetch("/api/scouts", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(scoutRecord),
-                });
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.error("Error creating scout record:", errorData);
-                    throw new Error(errorData.message || "Failed to create scout profile. Please contact an administrator.");
-                }
+                // Use Supabase directly for scout registration
+                await scoutsService.create(scoutRecord as any);
+
                 // TODO: Send email with BSP ID to scout  
                 // This will be implemented later
                 setRegisteredScoutId(scoutUid);

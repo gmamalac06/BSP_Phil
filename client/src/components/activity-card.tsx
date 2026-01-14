@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, CheckCircle } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 
 interface ActivityCardProps {
   activity: {
@@ -54,7 +54,7 @@ export function ActivityCard({ activity, onMarkAttendance, onViewDetails }: Acti
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{format(new Date(activity.date), "PPP")}</span>
+            <span>{safeFormat(activity.date, "PPP")}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <MapPin className="h-4 w-4 text-muted-foreground" />

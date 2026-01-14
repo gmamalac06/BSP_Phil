@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { safeFormat } from "@/lib/safe-date";
 import type { AuditLog } from "@shared/schema";
 
 interface AuditLogTableProps {
@@ -46,7 +46,7 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
             logs.map((log) => (
               <TableRow key={log.id} data-testid={`row-audit-${log.id}`}>
                 <TableCell className="font-mono text-xs">
-                  {log.createdAt ? format(new Date(log.createdAt), "PPpp") : "N/A"}
+                  {safeFormat((log as any).created_at || log.createdAt, "PPpp", "N/A")}
                 </TableCell>
                 <TableCell className="font-medium">{log.userId || "System"}</TableCell>
                 <TableCell>{log.action}</TableCell>

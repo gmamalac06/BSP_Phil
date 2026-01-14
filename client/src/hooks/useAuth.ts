@@ -21,22 +21,25 @@ export function useAuth() {
 
     const fetchUserProfile = async (sessionUser: SupabaseUser) => {
       try {
-        const res = await fetch(`/api/users/${sessionUser.id}`);
-        if (res.ok) {
-          const dbUser = await res.json();
-          if (mounted) {
-            setUser({
-              id: sessionUser.id,
-              email: sessionUser.email || "",
-              username: dbUser.username || sessionUser.user_metadata?.username || sessionUser.email?.split("@")[0] || "User",
-              role: dbUser.role as AppUser["role"],
-              isApproved: dbUser.isApproved ?? false,
-              schoolId: dbUser.schoolId,
-              unitId: dbUser.unitId,
-            });
-          }
+        // Query user directly from Supabase
+        const { data: dbUser, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", sessionUser.id)
+          .single();
+
+        if (!error && dbUser && mounted) {
+          setUser({
+            id: sessionUser.id,
+            email: sessionUser.email || "",
+            username: dbUser.username || sessionUser.user_metadata?.username || sessionUser.email?.split("@")[0] || "User",
+            role: dbUser.role as AppUser["role"],
+            isApproved: dbUser.is_approved ?? false,
+            schoolId: dbUser.school_id,
+            unitId: dbUser.unit_id,
+          });
         } else {
-          console.error("Failed to fetch user profile from API");
+          console.error("Failed to fetch user profile:", error?.message);
           if (mounted) {
             setUser(transformUser(sessionUser));
           }

@@ -74,7 +74,7 @@ export default function Dashboard() {
 
   const upcomingActivities = activitiesData.slice(0, 2).map(act => ({
     ...act,
-    date: new Date(act.date),
+    date: act.date,
     attendees: 0,
   }));
 
