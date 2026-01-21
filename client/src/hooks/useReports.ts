@@ -5,7 +5,7 @@ import { reportsService } from "@/lib/supabase-db";
 export function useReports(category?: string) {
   return useQuery({
     queryKey: ["reports", category],
-    queryFn: () => reportsService.getAll(),
+    queryFn: () => category ? reportsService.getByCategory(category) : reportsService.getAll(),
   });
 }
 

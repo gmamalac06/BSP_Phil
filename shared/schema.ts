@@ -1,227 +1,269 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean } from "drizzle-orm/pg-core";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table - integrates with Supabase Auth
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey(), // UUID from Supabase Auth
-  email: text("email").notNull().unique(),
-  username: text("username").notNull().unique(),
-  role: text("role").notNull().default("user"), // admin, staff, unit_leader, scout, user
-  isApproved: boolean("is_approved").notNull().default(false), // Whether the user is approved by admin
-  schoolId: varchar("school_id"), // For staff - which school they belong to
-  unitId: varchar("unit_id"), // For unit_leader - which unit they lead
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+// Helper for nullable optional fields
+const nullableString = z.string().nullable().optional();
+const nullableNumber = z.number().nullable().optional();
+const nullableDate = z.string().or(z.date()).nullable().optional();
+
+// -----------------------------------------------------------------------------
+// Users
+// -----------------------------------------------------------------------------
+export const selectUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  username: z.string(),
+  role: z.string().default("user"),
+  isApproved: z.boolean().default(false),
+  schoolId: nullableString,
+  unitId: nullableString,
+  createdAt: z.string().or(z.date()).optional(),
 });
 
-// Schools table
-export const schools = pgTable("schools", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  municipality: text("municipality").notNull(),
-  principal: text("principal"),
-  logo: text("logo"), // URL to school logo in storage
-  schoolNumber: text("school_number"), // School identification number
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const insertUserSchema = selectUserSchema.extend({
+  id: z.string().optional(),
+  isApproved: z.boolean().optional(),
+  role: z.string().optional(),
 });
 
-// Units table
-export const units = pgTable("units", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  leader: text("leader").notNull(),
-  schoolId: varchar("school_id").references(() => schools.id, { onDelete: "cascade" }),
-  status: text("status").notNull().default("active"), // active, inactive
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export type User = z.infer<typeof selectUserSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+// -----------------------------------------------------------------------------
+// Schools
+// -----------------------------------------------------------------------------
+export const selectSchoolSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  municipality: z.string(),
+  principal: nullableString,
+  logo: nullableString,
+  schoolNumber: nullableString,
+  createdAt: z.string().or(z.date()).optional(),
 });
 
-// Scouts table
-export const scouts = pgTable("scouts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  uid: text("uid").notNull().unique(), // BSP-2024-001234
-  name: text("name").notNull(),
-  unitId: varchar("unit_id").references(() => units.id, { onDelete: "set null" }),
-  schoolId: varchar("school_id").references(() => schools.id, { onDelete: "set null" }),
-  municipality: text("municipality").notNull(),
-  gender: text("gender").notNull(), // Male, Female, Other
-  status: text("status").notNull().default("pending"), // active, pending, expired
-  membershipYears: integer("membership_years").default(0),
-  dateOfBirth: timestamp("date_of_birth"),
-  address: text("address"),
-  parentGuardian: text("parent_guardian"),
-  contactNumber: text("contact_number"),
-  email: text("email"),
-  rank: text("rank"), // tenderfoot, second-class, first-class, eagle
-  paymentProof: text("payment_proof"), // URL to payment proof file in storage
-  profilePhoto: text("profile_photo"), // URL to profile photo in storage
-  bloodType: text("blood_type"), // A+, B+, O+, AB+, A-, B-, O-, AB-
-  emergencyContact: text("emergency_contact"), // Emergency contact phone number
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const insertSchoolSchema = selectSchoolSchema.extend({
+  id: z.string().optional(),
 });
 
-// Activities table
-export const activities = pgTable("activities", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  date: timestamp("date", { mode: 'string' }).notNull(),
-  location: text("location").notNull(),
-  latitude: text("latitude"), // Map coordinates (stored as text for precision)
-  longitude: text("longitude"), // Map coordinates (stored as text for precision)
-  capacity: integer("capacity").notNull(),
-  status: text("status").notNull().default("upcoming"), // upcoming, ongoing, completed, cancelled
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export type School = z.infer<typeof selectSchoolSchema>;
+export type InsertSchool = z.infer<typeof insertSchoolSchema>;
+
+// -----------------------------------------------------------------------------
+// Units
+// -----------------------------------------------------------------------------
+export const selectUnitSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  leader: z.string(),
+  schoolId: nullableString,
+  status: z.string().default("active"),
+  createdAt: z.string().or(z.date()).optional(),
 });
 
-// Activity Attendance junction table
-export const activityAttendance = pgTable("activity_attendance", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  activityId: varchar("activity_id").references(() => activities.id, { onDelete: "cascade" }).notNull(),
-  scoutId: varchar("scout_id").references(() => scouts.id, { onDelete: "cascade" }).notNull(),
-  attended: boolean("attended").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const insertUnitSchema = selectUnitSchema.extend({
+  id: z.string().optional(),
+  status: z.string().optional(),
 });
 
-// Announcements table
-export const announcements = pgTable("announcements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  type: text("type").notNull(), // announcement, policy, event
-  author: text("author").notNull(),
-  eventDate: timestamp("event_date", { mode: 'string' }), // Optional date for event-type announcements
-  eventTime: text("event_time"), // Optional time string (e.g., "2:00 PM")
-  photo: text("photo"), // URL to announcement photo in storage
-  smsNotified: boolean("sms_notified").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export type Unit = z.infer<typeof selectUnitSchema>;
+export type InsertUnit = z.infer<typeof insertUnitSchema>;
+
+// -----------------------------------------------------------------------------
+// Scouts
+// -----------------------------------------------------------------------------
+export const selectScoutSchema = z.object({
+  id: z.string(),
+  uid: z.string(),
+  name: z.string(),
+  unitId: nullableString,
+  schoolId: nullableString,
+  municipality: z.string(),
+  gender: z.string(),
+  status: z.string().default("pending"),
+  membershipYears: nullableNumber.default(0),
+  dateOfBirth: nullableDate,
+  address: nullableString,
+  parentGuardian: nullableString,
+  contactNumber: nullableString,
+  email: nullableString,
+  rank: nullableString,
+  paymentProof: nullableString,
+  profilePhoto: nullableString,
+  bloodType: nullableString,
+  emergencyContact: nullableString,
+  createdAt: z.string().or(z.date()).optional(),
 });
 
-// Reports table
-export const reports = pgTable("reports", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  category: text("category").notNull(), // enrollment, membership, activities
-  recordCount: integer("record_count").default(0),
-  generatedBy: varchar("generated_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const insertScoutSchema = selectScoutSchema.extend({
+  id: z.string().optional(),
+  uid: z.string().optional(), // Often generated server-side
+  status: z.string().optional(),
+  membershipYears: z.number().optional(),
 });
 
-// Audit Logs table
-export const auditLogs = pgTable("audit_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
-  action: text("action").notNull(),
-  details: text("details").notNull(),
-  category: text("category").notNull(), // create, update, delete, login, system
-  ipAddress: text("ip_address"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export type Scout = z.infer<typeof selectScoutSchema>;
+export type InsertScout = z.infer<typeof insertScoutSchema>;
+
+// -----------------------------------------------------------------------------
+// Activities
+// -----------------------------------------------------------------------------
+export const selectActivitySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  date: z.string(), // Kept as string to match original behavior
+  location: z.string(),
+  latitude: nullableString,
+  longitude: nullableString,
+  capacity: z.number().int(),
+  status: z.string().default("upcoming"),
+  createdAt: z.string().or(z.date()).optional(),
 });
 
-// Insert and Select Schemas
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
-
-export const insertSchoolSchema = createInsertSchema(schools);
-export const selectSchoolSchema = createSelectSchema(schools);
-
-export const insertUnitSchema = createInsertSchema(units);
-export const selectUnitSchema = createSelectSchema(units);
-
-export const insertScoutSchema = createInsertSchema(scouts);
-export const selectScoutSchema = createSelectSchema(scouts);
-
-// Custom activity schema - manually defined to properly handle string dates
-// (drizzle-zod's createInsertSchema doesn't respect mode: 'string' for timestamps)
+// Custom manually defined insert schema to match original logic
 export const insertActivitySchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  date: z.string().min(1, "Date is required"), // Accept ISO string from client
+  date: z.string().min(1, "Date is required"),
   location: z.string().min(1, "Location is required"),
-  latitude: z.string().nullable().optional(), // Map coordinates
-  longitude: z.string().nullable().optional(), // Map coordinates
+  latitude: nullableString,
+  longitude: nullableString,
   capacity: z.number().min(1, "Capacity must be at least 1"),
   status: z.string().default("upcoming"),
   createdAt: z.date().optional(),
 });
-export const selectActivitySchema = createSelectSchema(activities);
 
-export const insertActivityAttendanceSchema = createInsertSchema(activityAttendance);
-export const selectActivityAttendanceSchema = createSelectSchema(activityAttendance);
-
-export const insertAnnouncementSchema = createInsertSchema(announcements);
-export const selectAnnouncementSchema = createSelectSchema(announcements);
-
-export const insertReportSchema = createInsertSchema(reports);
-export const selectReportSchema = createSelectSchema(reports);
-
-export const insertAuditLogSchema = createInsertSchema(auditLogs);
-export const selectAuditLogSchema = createSelectSchema(auditLogs);
-
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-
-export type School = typeof schools.$inferSelect;
-export type InsertSchool = z.infer<typeof insertSchoolSchema>;
-
-export type Unit = typeof units.$inferSelect;
-export type InsertUnit = z.infer<typeof insertUnitSchema>;
-
-export type Scout = typeof scouts.$inferSelect;
-export type InsertScout = z.infer<typeof insertScoutSchema>;
-
-export type Activity = typeof activities.$inferSelect;
+export type Activity = z.infer<typeof selectActivitySchema>;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 
-export type ActivityAttendance = typeof activityAttendance.$inferSelect;
+// -----------------------------------------------------------------------------
+// Activity Attendance
+// -----------------------------------------------------------------------------
+export const selectActivityAttendanceSchema = z.object({
+  id: z.string(),
+  activityId: z.string(),
+  scoutId: z.string(),
+  attended: z.boolean().default(false),
+  createdAt: z.string().or(z.date()).optional(),
+});
+
+export const insertActivityAttendanceSchema = selectActivityAttendanceSchema.extend({
+  id: z.string().optional(),
+  attended: z.boolean().optional(),
+});
+
+export type ActivityAttendance = z.infer<typeof selectActivityAttendanceSchema>;
 export type InsertActivityAttendance = z.infer<typeof insertActivityAttendanceSchema>;
 
-export type Announcement = typeof announcements.$inferSelect;
+// -----------------------------------------------------------------------------
+// Announcements
+// -----------------------------------------------------------------------------
+export const selectAnnouncementSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  type: z.string(),
+  author: z.string(),
+  eventDate: nullableDate,
+  eventTime: nullableString,
+  photo: nullableString,
+  smsNotified: z.boolean().default(false),
+  createdAt: z.string().or(z.date()).optional(),
+});
+
+export const insertAnnouncementSchema = selectAnnouncementSchema.extend({
+  id: z.string().optional(),
+  smsNotified: z.boolean().optional(),
+});
+
+export type Announcement = z.infer<typeof selectAnnouncementSchema>;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 
-export type Report = typeof reports.$inferSelect;
+// -----------------------------------------------------------------------------
+// Reports
+// -----------------------------------------------------------------------------
+export const selectReportSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  recordCount: nullableNumber.default(0),
+  generatedBy: nullableString,
+  createdAt: z.string().or(z.date()).optional(),
+});
+
+export const insertReportSchema = selectReportSchema.extend({
+  id: z.string().optional(),
+  recordCount: z.number().optional(),
+});
+
+export type Report = z.infer<typeof selectReportSchema>;
 export type InsertReport = z.infer<typeof insertReportSchema>;
 
-export type AuditLog = typeof auditLogs.$inferSelect;
+// -----------------------------------------------------------------------------
+// Audit Logs
+// -----------------------------------------------------------------------------
+export const selectAuditLogSchema = z.object({
+  id: z.string(),
+  userId: nullableString,
+  action: z.string(),
+  details: z.string(),
+  category: z.string(),
+  ipAddress: nullableString,
+  createdAt: z.string().or(z.date()).optional(),
+});
+
+export const insertAuditLogSchema = selectAuditLogSchema.extend({
+  id: z.string().optional(),
+});
+
+export type AuditLog = z.infer<typeof selectAuditLogSchema>;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 
-// Settings table - system configuration (admin only)
-export const settings = pgTable("settings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  category: text("category").notNull(), // general, notifications, security, backup
-  key: text("key").notNull().unique(),
-  value: text("value").notNull(),
-  label: text("label").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // text, number, boolean, select
-  updatedBy: varchar("updated_by").references(() => users.id, { onDelete: "set null" }),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+// -----------------------------------------------------------------------------
+// Settings
+// -----------------------------------------------------------------------------
+export const selectSettingsSchema = z.object({
+  id: z.string(),
+  category: z.string(),
+  key: z.string(),
+  value: z.string(),
+  label: z.string(),
+  description: nullableString,
+  type: z.string(),
+  updatedBy: nullableString,
+  updatedAt: z.string().or(z.date()).optional(),
 });
 
-export const insertSettingsSchema = createInsertSchema(settings);
-export const selectSettingsSchema = createSelectSchema(settings);
+export const insertSettingsSchema = selectSettingsSchema.extend({
+  id: z.string().optional(),
+  updatedAt: z.string().or(z.date()).optional(),
+});
 
-export type Settings = typeof settings.$inferSelect;
+export type Settings = z.infer<typeof selectSettingsSchema>;
 export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 
-// Carousel Slides table - landing page event slides (admin configurable)
-export const carouselSlides = pgTable("carousel_slides", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  description: text("description"),
-  imageUrl: text("image_url").notNull(), // URL to slide image in storage
-  linkUrl: text("link_url"), // Optional link when clicking the slide
-  displayOrder: integer("display_order").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+// -----------------------------------------------------------------------------
+// Carousel Slides
+// -----------------------------------------------------------------------------
+export const selectCarouselSlideSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: nullableString,
+  image_url: z.string(),
+  link_url: nullableString,
+  display_order: z.number().int().default(0),
+  is_active: z.boolean().default(true),
+  created_by: nullableString,
+  created_at: z.string().or(z.date()).optional(),
 });
 
-export const insertCarouselSlideSchema = createInsertSchema(carouselSlides);
-export const selectCarouselSlideSchema = createSelectSchema(carouselSlides);
+export const insertCarouselSlideSchema = selectCarouselSlideSchema.extend({
+  id: z.string().optional(),
+  display_order: z.number().optional(),
+  is_active: z.boolean().optional(),
+});
 
-export type CarouselSlide = typeof carouselSlides.$inferSelect;
+export type CarouselSlide = z.infer<typeof selectCarouselSlideSchema>;
 export type InsertCarouselSlide = z.infer<typeof insertCarouselSlideSchema>;

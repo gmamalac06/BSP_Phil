@@ -7,8 +7,8 @@ interface CarouselSlide {
     id: string;
     title: string;
     description?: string | null;
-    imageUrl: string;
-    linkUrl?: string | null;
+    image_url: string;
+    link_url?: string | null;
 }
 
 interface EventCarouselProps {
@@ -20,6 +20,7 @@ export function EventCarousel({ slides, autoPlayInterval = 5000 }: EventCarousel
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
     const [isHovering, setIsHovering] = useState(false);
+    const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Auto-play functionality
@@ -73,9 +74,15 @@ export function EventCarousel({ slides, autoPlayInterval = 5000 }: EventCarousel
                     >
                         {/* Background Image */}
                         <img
-                            src={slide.imageUrl}
+                            src={failedImages.has(slide.id) ? "/bsp-logo.svg" : slide.image_url}
                             alt={slide.title}
-                            className="w-full h-full object-cover"
+                            className={cn(
+                                "w-full h-full object-cover",
+                                failedImages.has(slide.id) && "object-contain p-20 bg-muted"
+                            )}
+                            onError={() => {
+                                setFailedImages(prev => new Set(prev).add(slide.id));
+                            }}
                         />
 
                         {/* Gradient Overlay */}
@@ -91,9 +98,9 @@ export function EventCarousel({ slides, autoPlayInterval = 5000 }: EventCarousel
                                     {slide.description}
                                 </p>
                             )}
-                            {slide.linkUrl && (
+                            {slide.link_url && (
                                 <a
-                                    href={slide.linkUrl}
+                                    href={slide.link_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-block mt-4 px-6 py-2 bg-primary/90 hover:bg-primary rounded-full text-sm font-medium transition-colors"

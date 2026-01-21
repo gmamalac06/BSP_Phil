@@ -23,7 +23,7 @@ function EventCarouselSection() {
   return (
     <section className="py-12 px-4 bg-muted/30">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-8">Upcoming Events</h2>
+        <h2 className="text-3xl font-bold text-center mb-8">Events</h2>
         <EventCarousel slides={slides} />
       </div>
     </section>

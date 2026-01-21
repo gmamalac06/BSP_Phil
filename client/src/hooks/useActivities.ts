@@ -5,7 +5,7 @@ import { activitiesService } from "@/lib/supabase-db";
 export function useActivities(status?: string) {
   return useQuery({
     queryKey: ["activities", status],
-    queryFn: () => activitiesService.getAll(),
+    queryFn: () => activitiesService.getAll({ status }),
   });
 }
 

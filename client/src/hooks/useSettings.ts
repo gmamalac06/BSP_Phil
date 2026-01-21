@@ -14,15 +14,7 @@ export function useSettings() {
 export function useSettingsByCategory(category: string) {
   return useQuery({
     queryKey: ["settings", category],
-    queryFn: async (): Promise<Settings[]> => {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("*")
-        .eq("category", category)
-        .order("key");
-      if (error) throw new Error(error.message);
-      return data || [];
-    },
+    queryFn: () => settingsService.getByCategory(category),
     staleTime: 1000 * 60 * 5,
   });
 }
@@ -33,12 +25,7 @@ export function useUpdateSetting() {
   return useMutation({
     mutationFn: async ({ key, value, updatedBy }: { key: string; value: string; updatedBy?: string }) => {
       // Find setting by key first
-      const { data: existing } = await supabase
-        .from("settings")
-        .select("id")
-        .eq("key", key)
-        .single();
-
+      const existing = await settingsService.get(key);
       if (!existing) throw new Error("Setting not found");
       return settingsService.update(existing.id, value);
     },
@@ -53,9 +40,7 @@ export function useInitializeSettings() {
 
   return useMutation({
     mutationFn: async () => {
-      // This would need to be handled via Supabase Edge Functions or manually
-      // For now, just return void
-      console.log("Settings initialization should be done via Supabase migrations");
+      return settingsService.initializeDefaultSettings();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });

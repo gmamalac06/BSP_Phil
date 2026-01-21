@@ -40,7 +40,7 @@ export default function CarouselSettings() {
     const uploadImage = async (file: File): Promise<string> => {
         const fileExt = file.name.split(".").pop();
         const fileName = `carousel-${Date.now()}.${fileExt}`;
-        const filePath = `carousel-slides/${fileName}`;
+        const filePath = fileName;
 
         const { error: uploadError } = await supabase.storage
             .from("carousel-slides")
@@ -61,16 +61,16 @@ export default function CarouselSettings() {
             if (!imageFile) throw new Error("Image is required");
 
             const imageUrl = await uploadImage(imageFile);
-            const maxOrder = Math.max(0, ...slides.map(s => s.displayOrder));
+            const maxOrder = Math.max(0, ...slides.map(s => s.display_order));
 
             return carouselService.create({
                 title: formData.title,
                 description: formData.description || null,
-                imageUrl,
-                linkUrl: formData.linkUrl || null,
-                displayOrder: maxOrder + 1,
-                isActive: formData.isActive,
-            });
+                image_url: imageUrl,
+                link_url: formData.linkUrl || null,
+                display_order: maxOrder + 1,
+                is_active: formData.isActive,
+            } as any);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
@@ -85,7 +85,7 @@ export default function CarouselSettings() {
     // Update slide mutation
     const updateSlide = useMutation({
         mutationFn: async (id: string) => {
-            let imageUrl = editingSlide?.imageUrl;
+            let imageUrl = editingSlide?.image_url;
 
             if (imageFile) {
                 imageUrl = await uploadImage(imageFile);
@@ -94,10 +94,10 @@ export default function CarouselSettings() {
             return carouselService.update(id, {
                 title: formData.title,
                 description: formData.description || null,
-                imageUrl,
-                linkUrl: formData.linkUrl || null,
-                isActive: formData.isActive,
-            });
+                image_url: imageUrl,
+                link_url: formData.linkUrl || null,
+                is_active: formData.isActive,
+            } as any);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
@@ -124,7 +124,7 @@ export default function CarouselSettings() {
     // Reorder slide mutation
     const reorderSlide = useMutation({
         mutationFn: async ({ id, direction }: { id: string; direction: "up" | "down" }) => {
-            const sortedSlides = [...slides].sort((a, b) => a.displayOrder - b.displayOrder);
+            const sortedSlides = [...slides].sort((a, b) => a.display_order - b.display_order);
             const currentIndex = sortedSlides.findIndex(s => s.id === id);
             const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
 
@@ -134,8 +134,8 @@ export default function CarouselSettings() {
             const targetSlide = sortedSlides[targetIndex];
 
             // Swap display orders
-            await carouselService.update(currentSlide.id, { displayOrder: targetSlide.displayOrder });
-            await carouselService.update(targetSlide.id, { displayOrder: currentSlide.displayOrder });
+            await carouselService.update(currentSlide.id, { display_order: targetSlide.display_order } as any);
+            await carouselService.update(targetSlide.id, { display_order: currentSlide.display_order } as any);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
@@ -157,10 +157,10 @@ export default function CarouselSettings() {
             setFormData({
                 title: slide.title,
                 description: slide.description || "",
-                linkUrl: slide.linkUrl || "",
-                isActive: slide.isActive,
+                linkUrl: slide.link_url || "",
+                isActive: slide.is_active,
             });
-            setImagePreview(slide.imageUrl);
+            setImagePreview(slide.image_url);
         } else {
             resetForm();
         }
@@ -198,7 +198,7 @@ export default function CarouselSettings() {
         }
     };
 
-    const sortedSlides = [...slides].sort((a, b) => a.displayOrder - b.displayOrder);
+    const sortedSlides = [...slides].sort((a, b) => a.display_order - b.display_order);
 
     return (
         <div className="p-6 space-y-6">
@@ -239,15 +239,22 @@ export default function CarouselSettings() {
             ) : (
                 <div className="space-y-4">
                     {sortedSlides.map((slide, index) => (
-                        <Card key={slide.id} className={!slide.isActive ? "opacity-60" : ""}>
+                        <Card key={slide.id} className={!slide.is_active ? "opacity-60" : ""}>
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-4">
                                     {/* Thumbnail */}
                                     <div className="w-32 h-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
                                         <img
-                                            src={slide.imageUrl}
+                                            src={slide.image_url}
                                             alt={slide.title}
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.src = "/bsp-logo.svg";
+                                                target.style.padding = "20px";
+                                                target.style.objectFit = "contain";
+                                                target.className = "w-full h-full bg-muted";
+                                            }}
                                         />
                                     </div>
 
@@ -260,12 +267,12 @@ export default function CarouselSettings() {
                                             </p>
                                         )}
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-xs px-2 py-0.5 rounded-full ${slide.isActive ? "bg-green-500/20 text-green-600" : "bg-muted text-muted-foreground"
+                                            <span className={`text-xs px-2 py-0.5 rounded-full ${slide.is_active ? "bg-green-500/20 text-green-600" : "bg-muted text-muted-foreground"
                                                 }`}>
-                                                {slide.isActive ? "Active" : "Inactive"}
+                                                {slide.is_active ? "Active" : "Inactive"}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                                Order: {slide.displayOrder}
+                                                Order: {slide.display_order}
                                             </span>
                                         </div>
                                     </div>

@@ -5,7 +5,7 @@ import { announcementsService } from "@/lib/supabase-db";
 export function useAnnouncements(type?: string) {
   return useQuery({
     queryKey: ["announcements", type],
-    queryFn: () => announcementsService.getAll(),
+    queryFn: () => announcementsService.getAll({ type }),
   });
 }
 

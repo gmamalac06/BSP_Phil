@@ -5,14 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Bell, Shield, Save, Lock, RefreshCw } from "lucide-react";
+import { Database, Bell, Shield, Save, Lock, RefreshCw, Image, ExternalLink } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useSettings, useUpdateSetting, useInitializeSettings } from "@/hooks/useSettings";
 import { useAuth, useRequireRole } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import type { Settings as SettingsType } from "@shared/schema";
 
 export default function Settings() {
+  const [, setLocation] = useLocation();
   const { data: settings = [], isLoading } = useSettings();
   const updateSetting = useUpdateSetting();
   const initializeSettings = useInitializeSettings();
@@ -53,7 +55,7 @@ export default function Settings() {
     try {
       const categorySettings = settingsByCategory[category];
       const updates = categorySettings.filter(s => s.key in localSettings);
-      
+
       if (updates.length === 0) {
         toast({
           title: "No changes",
@@ -69,7 +71,7 @@ export default function Settings() {
           updatedBy: user?.id,
         });
       }
-      
+
       setLocalSettings({});
       toast({
         title: "Settings saved",
@@ -146,7 +148,7 @@ export default function Settings() {
             <p className="text-muted-foreground mb-4">
               No settings have been configured yet. Click the button below to create default settings for the system.
             </p>
-            <Button 
+            <Button
               onClick={handleInitializeSettings}
               disabled={initializeSettings.isPending}
             >
@@ -209,6 +211,7 @@ export default function Settings() {
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList>
           <TabsTrigger value="general" data-testid="tab-general">General</TabsTrigger>
+          <TabsTrigger value="landing" data-testid="tab-landing">Landing Page</TabsTrigger>
           <TabsTrigger value="notifications" data-testid="tab-notifications">Notifications</TabsTrigger>
           <TabsTrigger value="security" data-testid="tab-security">Security</TabsTrigger>
           <TabsTrigger value="backup" data-testid="tab-backup">Backup</TabsTrigger>
@@ -235,6 +238,44 @@ export default function Settings() {
                   {updateSetting.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="landing">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-5 w-5" />
+                Landing Page Settings
+              </CardTitle>
+              <CardDescription>
+                Configure the public landing page appearance and content
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-start justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Event Carousel</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Manage event slides displayed on the landing page. Add images and links to promote Boy Scout of the Philippines hot events and activities.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/carousel-settings")}
+                  className="flex-shrink-0"
+                >
+                  Manage Carousel
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+
+              <Separator />
+
+              <p className="text-sm text-muted-foreground">
+                More landing page customization options coming soon...
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
