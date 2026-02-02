@@ -10,15 +10,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Filter } from "lucide-react";
+import { useSchools } from "@/hooks/useSchools";
+import { useUnits } from "@/hooks/useUnits";
+import { useState, useMemo } from "react";
 
 interface FilterPanelProps {
   onFilter?: (filters: any) => void;
 }
 
 export function FilterPanel({ onFilter }: FilterPanelProps) {
+  const { data: schools = [] } = useSchools();
+  const { data: units = [] } = useUnits();
+  const [localFilters, setLocalFilters] = useState<any>({});
+
+  const municipalities = useMemo(() => {
+    const unique = new Set(schools.map(s => s.municipality).filter(Boolean));
+    return Array.from(unique).sort();
+  }, [schools]);
+
+  const handleFilterChange = (key: string, value: string) => {
+    const newFilters = { ...localFilters, [key]: value === "all" ? undefined : value };
+    setLocalFilters(newFilters);
+    // Don't auto-apply, wait for Apply button
+  };
+
   const handleApplyFilters = () => {
-    console.log("Filters applied");
-    onFilter?.({});
+    console.log("Filters applied", localFilters);
+    onFilter?.(localFilters);
   };
 
   return (
@@ -74,46 +92,51 @@ export function FilterPanel({ onFilter }: FilterPanelProps) {
 
         <div className="space-y-2">
           <Label htmlFor="municipality">Municipality</Label>
-          <Select>
+          <Select onValueChange={(value) => handleFilterChange("municipality", value)}>
             <SelectTrigger id="municipality" data-testid="select-municipality">
               <SelectValue placeholder="All municipalities" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Municipalities</SelectItem>
-              <SelectItem value="manila">Manila</SelectItem>
-              <SelectItem value="quezon-city">Quezon City</SelectItem>
-              <SelectItem value="makati">Makati</SelectItem>
-              <SelectItem value="pasig">Pasig</SelectItem>
+              {municipalities.map((municipality) => (
+                <SelectItem key={municipality} value={municipality}>
+                  {municipality}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="school">School</Label>
-          <Select>
+          <Select onValueChange={(value) => handleFilterChange("schoolId", value)}>
             <SelectTrigger id="school" data-testid="select-school-filter">
               <SelectValue placeholder="All schools" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Schools</SelectItem>
-              <SelectItem value="manila-science">Manila Science HS</SelectItem>
-              <SelectItem value="qc-high">Quezon City HS</SelectItem>
-              <SelectItem value="makati-high">Makati HS</SelectItem>
+              {schools.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="unit">Unit</Label>
-          <Select>
+          <Select onValueChange={(value) => handleFilterChange("unitId", value)}>
             <SelectTrigger id="unit" data-testid="select-unit-filter">
               <SelectValue placeholder="All units" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Units</SelectItem>
-              <SelectItem value="eagle">Eagle Patrol</SelectItem>
-              <SelectItem value="phoenix">Phoenix Patrol</SelectItem>
-              <SelectItem value="falcon">Falcon Patrol</SelectItem>
+              {units.map((unit) => (
+                <SelectItem key={unit.id} value={unit.id}>
+                  {unit.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
