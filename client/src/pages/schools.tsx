@@ -144,6 +144,28 @@ export default function Schools() {
     });
   };
 
+  const handleDownloadMasterList = () => {
+    const columns: ExportColumn[] = [
+      { key: "name", label: "School Name" },
+      { key: "municipality", label: "Municipality" },
+      { key: "principal", label: "Principal" },
+      { key: "schoolNumber", label: "School Number" },
+      { key: "createdAt", label: "Date Added", format: formatDateForExport },
+    ];
+
+    // Export ALL schools, not just filtered
+    exportToCSV(
+      schools,
+      columns,
+      generateFilename("master_schools_list")
+    );
+
+    toast({
+      title: "Master List Downloaded",
+      description: `Downloaded master list with all ${schools.length} school(s)`,
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -154,6 +176,15 @@ export default function Schools() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleDownloadMasterList}
+            disabled={schools.length === 0}
+            data-testid="button-download-master-list"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Master List ({schools.length})
+          </Button>
           <Button
             variant="outline"
             onClick={handleExportSchools}

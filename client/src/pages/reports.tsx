@@ -2,16 +2,18 @@ import { useState, useMemo } from "react";
 import { ReportCard } from "@/components/report-card";
 import { FilterPanel } from "@/components/filter-panel";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Plus } from "lucide-react";
+import { FileText, Download, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useReports, useCreateReport } from "@/hooks/useReports";
-import { useScouts } from "@/hooks/useScouts";
+import { useScouts, ScoutWithRelations } from "@/hooks/useScouts";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
 import { useActivities } from "@/hooks/useActivities";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, generateFilename, formatDateForExport, formatDateTimeForExport, ExportColumn } from "@/lib/export";
 import { useAuth } from "@/hooks/useAuth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { reportsService } from "@/lib/supabase-db";
 
 export default function Reports() {
   const [filters, setFilters] = useState<any>({});
@@ -24,24 +26,102 @@ export default function Reports() {
   const { data: activities = [] } = useActivities();
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const filteredReports = useMemo(() => {
+  const deleteReport = useMutation({
+    mutationFn: (id: string) => reportsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast({
+        title: "Report deleted",
+        description: "Report history entry has been removed",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Filter the report history list
+  const filteredReportHistory = useMemo(() => {
     let result = [...reports];
 
-    if (filters.category) {
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(r => r.title.toLowerCase().includes(searchLower));
+    }
+
+    if (filters.category) { // unlikely to be set from filter panel but good to have
       result = result.filter((r) => r.category === filters.category);
     }
+
+    // Also filter history by generate date if needed, but filter panel doesn't support date range yet
 
     return result;
   }, [reports, filters]);
 
+  // Filter DATA for report generation
+  const filteredScoutsData = useMemo(() => {
+    let result = [...scouts];
+
+    if (filters.municipality) {
+      result = result.filter(s => s.municipality === filters.municipality);
+    }
+    if (filters.school) {
+      result = result.filter(s => s.schoolId === filters.school);
+    }
+    if (filters.unitId) {
+      result = result.filter(s => s.unitId === filters.unitId);
+    }
+    if (filters.status) {
+      result = result.filter(s => s.status === filters.status);
+    }
+    if (filters.gender) {
+      result = result.filter(s => s.gender === filters.gender);
+    }
+
+    return result;
+  }, [scouts, filters]);
+
+  const filteredSchoolsData = useMemo(() => {
+    let result = [...schools];
+    if (filters.municipality) {
+      result = result.filter(s => s.municipality === filters.municipality);
+    }
+    return result;
+  }, [schools, filters]);
+
+  const filteredUnitsData = useMemo(() => {
+    let result = [...units];
+    if (filters.school) {
+      result = result.filter(u => u.schoolId === filters.school);
+    }
+    return result;
+  }, [units, filters]);
+
+
   const generateScoutsReport = async () => {
     try {
-      const report = await createReport.mutateAsync({
-        title: "Scouts Enrollment Report",
-        description: `Complete list of all scouts as of ${new Date().toLocaleDateString()}`,
+      const dataToExport = filteredScoutsData;
+
+      if (dataToExport.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "Current filters resulted in 0 records.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await createReport.mutateAsync({
+        title: `Scouts Report ${filters.school ? '- School Filtered' : ''}`,
+        description: `Generated report with ${dataToExport.length} scouts. Filters: ${Object.entries(filters).filter(([k, v]) => v).map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
         category: "enrollment",
-        recordCount: scouts.length,
+        recordCount: dataToExport.length,
         generatedBy: user?.id,
       });
 
@@ -59,11 +139,11 @@ export default function Reports() {
         { key: "createdAt", label: "Registered Date", format: formatDateForExport },
       ];
 
-      exportToCSV(scouts, columns, generateFilename("scouts_report"));
-      
+      exportToCSV(dataToExport, columns, generateFilename("scouts_report"));
+
       toast({
         title: "Report generated",
-        description: `Scouts enrollment report with ${scouts.length} records generated successfully`,
+        description: `Scouts report with ${dataToExport.length} records generated successfully`,
       });
     } catch (error: any) {
       toast({
@@ -76,11 +156,22 @@ export default function Reports() {
 
   const generateSchoolsReport = async () => {
     try {
+      const dataToExport = filteredSchoolsData;
+
+      if (dataToExport.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "Current filters resulted in 0 records.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       await createReport.mutateAsync({
         title: "Schools Report",
-        description: `List of all schools as of ${new Date().toLocaleDateString()}`,
+        description: `List of schools. Filters: ${Object.entries(filters).filter(([k, v]) => v && k === 'municipality').map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
         category: "enrollment",
-        recordCount: schools.length,
+        recordCount: dataToExport.length,
         generatedBy: user?.id,
       });
 
@@ -91,11 +182,11 @@ export default function Reports() {
         { key: "createdAt", label: "Added Date", format: formatDateForExport },
       ];
 
-      exportToCSV(schools, columns, generateFilename("schools_report"));
-      
+      exportToCSV(dataToExport, columns, generateFilename("schools_report"));
+
       toast({
         title: "Report generated",
-        description: `Schools report with ${schools.length} records generated successfully`,
+        description: `Schools report with ${dataToExport.length} records generated successfully`,
       });
     } catch (error: any) {
       toast({
@@ -108,11 +199,22 @@ export default function Reports() {
 
   const generateUnitsReport = async () => {
     try {
+      const dataToExport = filteredUnitsData;
+
+      if (dataToExport.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "Current filters resulted in 0 records.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       await createReport.mutateAsync({
         title: "Units Report",
-        description: `List of all units as of ${new Date().toLocaleDateString()}`,
+        description: `List of units. Filters: ${Object.entries(filters).filter(([k, v]) => v).map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
         category: "enrollment",
-        recordCount: units.length,
+        recordCount: dataToExport.length,
         generatedBy: user?.id,
       });
 
@@ -123,11 +225,11 @@ export default function Reports() {
         { key: "createdAt", label: "Created Date", format: formatDateForExport },
       ];
 
-      exportToCSV(units, columns, generateFilename("units_report"));
-      
+      exportToCSV(dataToExport, columns, generateFilename("units_report"));
+
       toast({
         title: "Report generated",
-        description: `Units report with ${units.length} records generated successfully`,
+        description: `Units report with ${dataToExport.length} records generated successfully`,
       });
     } catch (error: any) {
       toast({
@@ -140,11 +242,14 @@ export default function Reports() {
 
   const generateActivitiesReport = async () => {
     try {
+      // Activities don't have many filters in panel except maybe status if we added it, but let's stick to base
+      const dataToExport = activities;
+
       await createReport.mutateAsync({
         title: "Activities Report",
         description: `List of all activities as of ${new Date().toLocaleDateString()}`,
         category: "activities",
-        recordCount: activities.length,
+        recordCount: dataToExport.length,
         generatedBy: user?.id,
       });
 
@@ -157,11 +262,11 @@ export default function Reports() {
         { key: "createdAt", label: "Created Date", format: formatDateForExport },
       ];
 
-      exportToCSV(activities, columns, generateFilename("activities_report"));
-      
+      exportToCSV(dataToExport, columns, generateFilename("activities_report"));
+
       toast({
         title: "Report generated",
-        description: `Activities report with ${activities.length} records generated successfully`,
+        description: `Activities report with ${dataToExport.length} records generated successfully`,
       });
     } catch (error: any) {
       toast({
@@ -174,15 +279,16 @@ export default function Reports() {
 
   const generateMembershipReport = async () => {
     try {
-      const activeScouts = scouts.filter(s => s.status === "active");
-      const pendingScouts = scouts.filter(s => s.status === "pending");
-      const expiredScouts = scouts.filter(s => s.status === "expired");
+      const dataToExport = filteredScoutsData;
+      const activeScouts = dataToExport.filter(s => s.status === "active");
+      const pendingScouts = dataToExport.filter(s => s.status === "pending");
+      const expiredScouts = dataToExport.filter(s => s.status === "expired");
 
       await createReport.mutateAsync({
         title: "Membership Report",
-        description: `Membership statistics as of ${new Date().toLocaleDateString()}`,
+        description: `Membership statistics. Filters: ${Object.entries(filters).filter(([k, v]) => v).map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
         category: "membership",
-        recordCount: scouts.length,
+        recordCount: dataToExport.length,
         generatedBy: user?.id,
       });
 
@@ -195,8 +301,8 @@ export default function Reports() {
         { key: "createdAt", label: "Joined Date", format: formatDateForExport },
       ];
 
-      exportToCSV(scouts, columns, generateFilename("membership_report"));
-      
+      exportToCSV(dataToExport, columns, generateFilename("membership_report"));
+
       toast({
         title: "Report generated",
         description: `Membership report: ${activeScouts.length} active, ${pendingScouts.length} pending, ${expiredScouts.length} expired`,
@@ -211,14 +317,14 @@ export default function Reports() {
   };
 
   const handleGenerateReport = (reportId: string) => {
-    // This would be for pre-existing reports from database
-    const report = reports.find(r => r.id === reportId);
-    if (report) {
-      toast({
-        title: "Report downloaded",
-        description: `${report.title} has been downloaded`,
-      });
-    }
+    // Re-download is tricky because we don't store the file content, only metadata.
+    // Ideally we'd re-generate based on the description/metadata, but for now let's just show a toast
+    // explaining this limitation, or re-run the generation if we can infer the type.
+    // For simplicity given the scope, we'll inform the user.
+    toast({
+      title: "Download info",
+      description: "This is a historical record. Please generate a new report to get the latest data.",
+    });
   };
 
   const handlePrintReport = (reportId: string) => {
@@ -228,6 +334,12 @@ export default function Reports() {
     });
     window.print();
   };
+
+  const handleDeleteReport = (reportId: string) => {
+    if (confirm("Are you sure you want to delete this report history?")) {
+      deleteReport.mutate(reportId);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -255,38 +367,49 @@ export default function Reports() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Generate instant reports and export to CSV format
+                Generate instant reports and export to CSV format. Reports will respect the filters selected on the left.
               </p>
+
+              <div className="bg-muted/30 p-4 rounded-md mb-4 text-sm">
+                <span className="font-semibold">Active Filters: </span>
+                {Object.keys(filters).length === 0 ? "None (All Records)" :
+                  Object.entries(filters)
+                    .filter(([_, v]) => v) // filter out empty/null values
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join(", ")
+                }
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="justify-start"
                   onClick={generateScoutsReport}
                   disabled={createReport.isPending || scouts.length === 0}
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Scouts Enrollment ({scouts.length})
+                  Scouts Enrollment ({filteredScoutsData.length})
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="justify-start"
                   onClick={generateSchoolsReport}
                   disabled={createReport.isPending || schools.length === 0}
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Schools Report ({schools.length})
+                  Schools Report ({filteredSchoolsData.length})
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="justify-start"
                   onClick={generateUnitsReport}
                   disabled={createReport.isPending || units.length === 0}
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Units Report ({units.length})
+                  Units Report ({filteredUnitsData.length})
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="justify-start"
                   onClick={generateActivitiesReport}
                   disabled={createReport.isPending || activities.length === 0}
@@ -294,14 +417,14 @@ export default function Reports() {
                   <FileText className="h-4 w-4 mr-2" />
                   Activities Report ({activities.length})
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="justify-start md:col-span-2"
                   onClick={generateMembershipReport}
                   disabled={createReport.isPending || scouts.length === 0}
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Membership Statistics
+                  Membership Statistics ({filteredScoutsData.length})
                 </Button>
               </div>
             </CardContent>
@@ -323,20 +446,30 @@ export default function Reports() {
                 <div className="flex items-center justify-center h-32">
                   <div className="animate-pulse text-muted-foreground">Loading reports...</div>
                 </div>
-              ) : filteredReports.length === 0 ? (
+              ) : filteredReportHistory.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="text-sm text-muted-foreground">No reports generated yet. Create a report above to get started.</div>
+                  <div className="text-sm text-muted-foreground">No reports found matching your search.</div>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
-                  {filteredReports.map((report) => (
-                    <ReportCard
-                      key={report.id}
-                      report={report}
-                      onGenerate={handleGenerateReport}
-                      onDownload={handleGenerateReport}
-                      onPrint={handlePrintReport}
-                    />
+                  {filteredReportHistory.map((report) => (
+                    <div key={report.id} className="relative group">
+                      <ReportCard
+                        report={report as any}
+                        onGenerate={handleGenerateReport}
+                        onDownload={handleGenerateReport}
+                        onPrint={handlePrintReport}
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                        onClick={() => handleDeleteReport(report.id)}
+                        title="Delete Report History"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   ))}
                 </div>
               )}

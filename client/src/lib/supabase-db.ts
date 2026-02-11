@@ -140,6 +140,33 @@ export const unitsService = {
 };
 
 // ============== SCOUTS ==============
+
+// Helper: transform camelCase scout fields to snake_case for Supabase
+function scoutToSnakeCase(scout: Record<string, any>): Record<string, any> {
+    const keyMap: Record<string, string> = {
+        unitId: "unit_id",
+        schoolId: "school_id",
+        membershipYears: "membership_years",
+        dateOfBirth: "date_of_birth",
+        parentGuardian: "parent_guardian",
+        contactNumber: "contact_number",
+        paymentProof: "payment_proof",
+        profilePhoto: "profile_photo",
+        bloodType: "blood_type",
+        emergencyContact: "emergency_contact",
+        createdAt: "created_at",
+    };
+
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(scout)) {
+        // Skip relation objects returned by Supabase joins
+        if (key === "unit" || key === "school") continue;
+        const snakeKey = keyMap[key] || key;
+        result[snakeKey] = value;
+    }
+    return result;
+}
+
 export const scoutsService = {
     async getAll(filters?: {
         status?: string;
@@ -187,9 +214,10 @@ export const scoutsService = {
     },
 
     async create(scout: InsertScout): Promise<Scout> {
+        const dbScout = scoutToSnakeCase(scout as any);
         const { data, error } = await supabase
             .from("scouts")
-            .insert(scout)
+            .insert(dbScout)
             .select()
             .single();
         if (error) throw new Error(error.message);
@@ -197,9 +225,10 @@ export const scoutsService = {
     },
 
     async update(id: string, scout: Partial<InsertScout>): Promise<Scout> {
+        const dbScout = scoutToSnakeCase(scout as any);
         const { data, error } = await supabase
             .from("scouts")
-            .update(scout)
+            .update(dbScout)
             .eq("id", id)
             .select()
             .single();

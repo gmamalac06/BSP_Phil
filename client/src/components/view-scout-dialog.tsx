@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ interface ViewScoutDialogProps {
   scout: ScoutWithRelations | null;
   schoolName?: string;
   unitName?: string;
+  initialView?: "details" | "idcard";
 }
 
 const statusColors = {
@@ -28,8 +29,16 @@ export function ViewScoutDialog({
   scout,
   schoolName,
   unitName,
+  initialView = "details",
 }: ViewScoutDialogProps) {
-  const [showIDCard, setShowIDCard] = useState(false);
+  const [showIDCard, setShowIDCard] = useState(initialView === "idcard");
+
+  // Reset view when dialog opens/closes or initialView changes
+  useEffect(() => {
+    if (open) {
+      setShowIDCard(initialView === "idcard");
+    }
+  }, [open, initialView]);
 
   if (!scout) return null;
 
@@ -194,5 +203,3 @@ export function ViewScoutDialog({
     </Dialog>
   );
 }
-
-

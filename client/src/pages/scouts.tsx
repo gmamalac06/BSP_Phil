@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ScoutsTable } from "@/components/scouts-table";
 import { FilterPanel } from "@/components/filter-panel";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,11 @@ import { scoutsService } from "@/lib/supabase-db";
 export default function Scouts() {
   const [activeTab, setActiveTab] = useState("all");
   const [filters, setFilters] = useState<any>({});
+  const [initialFilters, setInitialFilters] = useState<Record<string, string>>({});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingScout, setEditingScout] = useState<ScoutWithRelations | null>(null);
   const [viewingScout, setViewingScout] = useState<ScoutWithRelations | null>(null);
+  const [viewDialogMode, setViewDialogMode] = useState<"details" | "idcard">("details");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deletingScoutId, setDeletingScoutId] = useState<string | null>(null);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -32,6 +34,17 @@ export default function Scouts() {
   const deleteScout = useDeleteScout();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Parse URL query params (e.g. ?school=xxx from schools page)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const schoolId = params.get("school");
+    if (schoolId) {
+      const urlFilters = { school: schoolId };
+      setInitialFilters(urlFilters);
+      setFilters(urlFilters);
+    }
+  }, []);
 
   // Scout approval mutation
   const approveScout = useMutation({
@@ -60,6 +73,20 @@ export default function Scouts() {
       result = result.filter((s) => s.status === activeTab);
     }
 
+    // Apply search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter((s) =>
+        s.name.toLowerCase().includes(searchLower) ||
+        s.uid.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply status filter from filter panel
+    if (filters.status) {
+      result = result.filter((s) => s.status === filters.status);
+    }
+
     // Apply additional filters from FilterPanel
     if (filters.municipality) {
       result = result.filter((s) =>
@@ -69,8 +96,8 @@ export default function Scouts() {
     if (filters.gender) {
       result = result.filter((s) => s.gender === filters.gender);
     }
-    if (filters.unit) {
-      result = result.filter((s) => s.unitId === filters.unit);
+    if (filters.unitId) {
+      result = result.filter((s) => s.unitId === filters.unitId);
     }
     if (filters.school) {
       result = result.filter((s) => s.schoolId === filters.school);
@@ -115,6 +142,12 @@ export default function Scouts() {
   };
 
   const handleViewScout = (scout: ScoutWithRelations) => {
+    setViewDialogMode("details");
+    setViewingScout(scout);
+  };
+
+  const handleViewId = (scout: ScoutWithRelations) => {
+    setViewDialogMode("idcard");
     setViewingScout(scout);
   };
 
@@ -233,6 +266,18 @@ export default function Scouts() {
     });
   };
 
+  const scoutsTableProps = {
+    scouts: filteredScouts,
+    selectedIds,
+    onSelectionChange: setSelectedIds,
+    onView: handleViewScout,
+    onEdit: setEditingScout,
+    onDownloadId: handleDownloadIDCard,
+    onDelete: (id: string) => setDeletingScoutId(id),
+    onApprove: handleApproveScout,
+    onViewId: handleViewId,
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -271,7 +316,7 @@ export default function Scouts() {
 
       <div className="grid gap-6 lg:grid-cols-4">
         <div>
-          <FilterPanel onFilter={setFilters} />
+          <FilterPanel onFilter={setFilters} initialFilters={initialFilters} />
         </div>
 
         <div className="lg:col-span-3">
@@ -295,55 +340,19 @@ export default function Scouts() {
               </TabsList>
 
               <TabsContent value="all" className="mt-6">
-                <ScoutsTable
-                  scouts={filteredScouts}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
-                  onView={handleViewScout}
-                  onEdit={setEditingScout}
-                  onDownloadId={handleDownloadIDCard}
-                  onDelete={(id) => setDeletingScoutId(id)}
-                  onApprove={handleApproveScout}
-                />
+                <ScoutsTable {...scoutsTableProps} />
               </TabsContent>
 
               <TabsContent value="active" className="mt-6">
-                <ScoutsTable
-                  scouts={filteredScouts}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
-                  onView={handleViewScout}
-                  onEdit={setEditingScout}
-                  onDownloadId={handleDownloadIDCard}
-                  onDelete={(id) => setDeletingScoutId(id)}
-                  onApprove={handleApproveScout}
-                />
+                <ScoutsTable {...scoutsTableProps} />
               </TabsContent>
 
               <TabsContent value="pending" className="mt-6">
-                <ScoutsTable
-                  scouts={filteredScouts}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
-                  onView={handleViewScout}
-                  onEdit={setEditingScout}
-                  onDownloadId={handleDownloadIDCard}
-                  onDelete={(id) => setDeletingScoutId(id)}
-                  onApprove={handleApproveScout}
-                />
+                <ScoutsTable {...scoutsTableProps} />
               </TabsContent>
 
               <TabsContent value="expired" className="mt-6">
-                <ScoutsTable
-                  scouts={filteredScouts}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
-                  onView={handleViewScout}
-                  onEdit={setEditingScout}
-                  onDownloadId={handleDownloadIDCard}
-                  onDelete={(id) => setDeletingScoutId(id)}
-                  onApprove={handleApproveScout}
-                />
+                <ScoutsTable {...scoutsTableProps} />
               </TabsContent>
             </Tabs>
           )}
@@ -372,6 +381,7 @@ export default function Scouts() {
         open={!!viewingScout}
         onOpenChange={(open) => !open && setViewingScout(null)}
         scout={viewingScout}
+        initialView={viewDialogMode}
       />
 
       {/* Single Delete Confirmation Dialog */}

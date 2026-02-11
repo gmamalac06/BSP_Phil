@@ -9,19 +9,27 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, RotateCcw } from "lucide-react";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 interface FilterPanelProps {
   onFilter?: (filters: any) => void;
+  initialFilters?: Record<string, string>;
 }
 
-export function FilterPanel({ onFilter }: FilterPanelProps) {
+export function FilterPanel({ onFilter, initialFilters }: FilterPanelProps) {
   const { data: schools = [] } = useSchools();
   const { data: units = [] } = useUnits();
-  const [localFilters, setLocalFilters] = useState<any>({});
+  const [localFilters, setLocalFilters] = useState<any>(initialFilters || {});
+
+  // Sync initial filters when they change (e.g. from URL params)
+  useEffect(() => {
+    if (initialFilters && Object.keys(initialFilters).length > 0) {
+      setLocalFilters((prev: any) => ({ ...prev, ...initialFilters }));
+    }
+  }, [initialFilters]);
 
   const municipalities = useMemo(() => {
     const unique = new Set(schools.map(s => s.municipality).filter(Boolean));
@@ -31,12 +39,20 @@ export function FilterPanel({ onFilter }: FilterPanelProps) {
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...localFilters, [key]: value === "all" ? undefined : value };
     setLocalFilters(newFilters);
-    // Don't auto-apply, wait for Apply button
+  };
+
+  const handleSearchChange = (value: string) => {
+    const newFilters = { ...localFilters, search: value || undefined };
+    setLocalFilters(newFilters);
   };
 
   const handleApplyFilters = () => {
-    console.log("Filters applied", localFilters);
     onFilter?.(localFilters);
+  };
+
+  const handleResetFilters = () => {
+    setLocalFilters({});
+    onFilter?.({});
   };
 
   return (
@@ -57,13 +73,18 @@ export function FilterPanel({ onFilter }: FilterPanelProps) {
               placeholder="Search by name or UID..."
               className="pl-9"
               data-testid="input-search"
+              value={localFilters.search || ""}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
-          <Select>
+          <Select
+            value={localFilters.status || "all"}
+            onValueChange={(value) => handleFilterChange("status", value)}
+          >
             <SelectTrigger id="status" data-testid="select-status">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
@@ -78,21 +99,27 @@ export function FilterPanel({ onFilter }: FilterPanelProps) {
 
         <div className="space-y-2">
           <Label htmlFor="gender">Gender</Label>
-          <Select>
+          <Select
+            value={localFilters.gender || "all"}
+            onValueChange={(value) => handleFilterChange("gender", value)}
+          >
             <SelectTrigger id="gender" data-testid="select-gender-filter">
               <SelectValue placeholder="All genders" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Genders</SelectItem>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
+              <SelectItem value="Male">Male</SelectItem>
+              <SelectItem value="Female">Female</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="municipality">Municipality</Label>
-          <Select onValueChange={(value) => handleFilterChange("municipality", value)}>
+          <Select
+            value={localFilters.municipality || "all"}
+            onValueChange={(value) => handleFilterChange("municipality", value)}
+          >
             <SelectTrigger id="municipality" data-testid="select-municipality">
               <SelectValue placeholder="All municipalities" />
             </SelectTrigger>
@@ -109,7 +136,10 @@ export function FilterPanel({ onFilter }: FilterPanelProps) {
 
         <div className="space-y-2">
           <Label htmlFor="school">School</Label>
-          <Select onValueChange={(value) => handleFilterChange("schoolId", value)}>
+          <Select
+            value={localFilters.school || "all"}
+            onValueChange={(value) => handleFilterChange("school", value)}
+          >
             <SelectTrigger id="school" data-testid="select-school-filter">
               <SelectValue placeholder="All schools" />
             </SelectTrigger>
@@ -126,7 +156,10 @@ export function FilterPanel({ onFilter }: FilterPanelProps) {
 
         <div className="space-y-2">
           <Label htmlFor="unit">Unit</Label>
-          <Select onValueChange={(value) => handleFilterChange("unitId", value)}>
+          <Select
+            value={localFilters.unitId || "all"}
+            onValueChange={(value) => handleFilterChange("unitId", value)}
+          >
             <SelectTrigger id="unit" data-testid="select-unit-filter">
               <SelectValue placeholder="All units" />
             </SelectTrigger>
@@ -141,9 +174,14 @@ export function FilterPanel({ onFilter }: FilterPanelProps) {
           </Select>
         </div>
 
-        <Button className="w-full" onClick={handleApplyFilters} data-testid="button-apply-filters">
-          Apply Filters
-        </Button>
+        <div className="flex gap-2">
+          <Button className="flex-1" onClick={handleApplyFilters} data-testid="button-apply-filters">
+            Apply Filters
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleResetFilters} title="Reset Filters" data-testid="button-reset-filters">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

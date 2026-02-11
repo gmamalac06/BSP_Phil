@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Edit, Download, Trash2, Check } from "lucide-react";
+import { Eye, Edit, Download, Trash2, Check, IdCard } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import type { ScoutWithRelations } from "@/hooks/useScouts";
@@ -23,6 +23,7 @@ interface ScoutsTableProps {
   onDownloadId?: (id: string) => void;
   onDelete?: (id: string) => void;
   onApprove?: (id: string) => void;
+  onViewId?: (scout: ScoutWithRelations) => void;
 }
 
 const statusColors = {
@@ -31,7 +32,7 @@ const statusColors = {
   expired: "bg-muted text-muted-foreground",
 };
 
-export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, onEdit, onDownloadId, onDelete, onApprove }: ScoutsTableProps) {
+export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, onEdit, onDownloadId, onDelete, onApprove, onViewId }: ScoutsTableProps) {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       onSelectionChange(scouts.map(s => s.id));
@@ -140,14 +141,26 @@ export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, on
                       size="icon"
                       onClick={() => onView?.(scout)}
                       data-testid={`button-view-${scout.id}`}
+                      title="View Details"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => onViewId?.(scout)}
+                      data-testid={`button-view-id-${scout.id}`}
+                      title="View ID Card"
+                      className="text-primary hover:text-primary hover:bg-primary/10"
+                    >
+                      <IdCard className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onEdit?.(scout)}
                       data-testid={`button-edit-${scout.id}`}
+                      title="Edit Scout"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -156,6 +169,7 @@ export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, on
                       size="icon"
                       onClick={() => onDownloadId?.(scout.id)}
                       data-testid={`button-download-id-${scout.id}`}
+                      title="Download ID Card"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -165,6 +179,7 @@ export function ScoutsTable({ scouts, selectedIds, onSelectionChange, onView, on
                       onClick={() => onDelete?.(scout.id)}
                       data-testid={`button-delete-${scout.id}`}
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Delete Scout"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

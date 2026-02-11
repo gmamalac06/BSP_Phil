@@ -10,7 +10,7 @@ interface ReportCardProps {
     description: string;
     category: "enrollment" | "membership" | "activities" | "financial";
     recordCount: number;
-    lastGenerated?: Date;
+    created_at?: string;
   };
   onGenerate?: (id: string) => void;
   onDownload?: (id: string) => void;
@@ -44,11 +44,11 @@ export function ReportCard({ report, onGenerate, onDownload, onPrint }: ReportCa
             <span className="text-muted-foreground">Records:</span>
             <span className="font-medium">{report.recordCount}</span>
           </div>
-          {report.lastGenerated && (
+          {report.created_at && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Last Generated:</span>
+              <span className="text-muted-foreground">Created:</span>
               <span className="font-medium">
-                {report.lastGenerated.toLocaleDateString()}
+                {new Date(report.created_at).toLocaleDateString()}
               </span>
             </div>
           )}
