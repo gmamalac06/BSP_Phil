@@ -233,7 +233,7 @@ export function RegistrationForm({ onSubmit, isSubmitting = false }: Registratio
                 pattern="[0-9]*"
                 value={formData.contactNumber}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11);
                   updateField("contactNumber", value);
                 }}
                 placeholder="09XXXXXXXXX"
@@ -269,7 +269,7 @@ export function RegistrationForm({ onSubmit, isSubmitting = false }: Registratio
                 pattern="[0-9]*"
                 value={formData.emergencyContact}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11);
                   updateField("emergencyContact", value);
                 }}
                 placeholder="09XXXXXXXXX"

@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
 import { ReportCard } from "@/components/report-card";
+import { ViewReportDialog } from "@/components/view-report-dialog";
+import { SchoolMasterlistModal } from "@/components/school-masterlist-modal";
 import { FilterPanel } from "@/components/filter-panel";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Plus, Trash2 } from "lucide-react";
+import { FileText, Download, Plus, Trash2, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useReports, useCreateReport } from "@/hooks/useReports";
 import { useScouts, ScoutWithRelations } from "@/hooks/useScouts";
@@ -27,6 +29,9 @@ export default function Reports() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [showMasterlist, setShowMasterlist] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [showViewReport, setShowViewReport] = useState(false);
 
   const deleteReport = useMutation({
     mutationFn: (id: string) => reportsService.delete(id),
@@ -317,14 +322,11 @@ export default function Reports() {
   };
 
   const handleGenerateReport = (reportId: string) => {
-    // Re-download is tricky because we don't store the file content, only metadata.
-    // Ideally we'd re-generate based on the description/metadata, but for now let's just show a toast
-    // explaining this limitation, or re-run the generation if we can infer the type.
-    // For simplicity given the scope, we'll inform the user.
-    toast({
-      title: "Download info",
-      description: "This is a historical record. Please generate a new report to get the latest data.",
-    });
+    const report = reports.find(r => r.id === reportId);
+    if (report) {
+      setSelectedReport(report);
+      setShowViewReport(true);
+    }
   };
 
   const handlePrintReport = (reportId: string) => {
@@ -399,6 +401,16 @@ export default function Reports() {
                   <FileText className="h-4 w-4 mr-2" />
                   Schools Report ({filteredSchoolsData.length})
                 </Button>
+                {filters.school && (
+                  <Button
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => setShowMasterlist(true)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Masterlist
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="justify-start"
@@ -477,6 +489,21 @@ export default function Reports() {
           </Card>
         </div>
       </div>
+
+      {filters.school && (
+        <SchoolMasterlistModal
+          open={showMasterlist}
+          onOpenChange={setShowMasterlist}
+          scouts={filteredScoutsData}
+          schoolName={schools.find(s => s.id === filters.school)?.name || "School"}
+        />
+      )}
+
+      <ViewReportDialog
+        report={selectedReport}
+        open={showViewReport}
+        onOpenChange={setShowViewReport}
+      />
     </div>
   );
 }

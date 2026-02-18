@@ -1,4 +1,7 @@
 import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -160,6 +163,24 @@ function AppContent() {
   const [location] = useLocation();
   const publicRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
   const isPublicRoute = publicRoutes.includes(location);
+
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event as string) === 'TOKEN_REFRESH_NOT_UPDATED') {
+        // Handle the "Invalid Refresh Token" or similar sync issues by logging out
+        console.warn("Token refresh failed, forcing logout to clean state.");
+        supabase.auth.signOut().then(() => {
+          window.location.href = "/login";
+        });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const style = {
     "--sidebar-width": "16rem",

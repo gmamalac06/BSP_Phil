@@ -14,6 +14,12 @@ import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
 import { useState, useMemo, useEffect } from "react";
 
+const YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 interface FilterPanelProps {
   onFilter?: (filters: any) => void;
   initialFilters?: Record<string, string>;
@@ -172,6 +178,47 @@ export function FilterPanel({ onFilter, initialFilters }: FilterPanelProps) {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="year">Year</Label>
+            <Select
+              value={localFilters.year || "all"}
+              onValueChange={(value) => handleFilterChange("year", value)}
+            >
+              <SelectTrigger id="year">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {YEARS.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="month">Month</Label>
+            <Select
+              value={localFilters.month || "all"}
+              onValueChange={(value) => handleFilterChange("month", value)}
+            >
+              <SelectTrigger id="month">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {MONTHS.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex gap-2">

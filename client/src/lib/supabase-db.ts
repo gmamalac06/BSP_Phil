@@ -723,20 +723,38 @@ export const usersService = {
 };
 
 // ============== REPORTS ==============
+// Helper: transform camelCase report fields to snake_case
+function reportToSnakeCase(report: Record<string, any>): Record<string, any> {
+    const keyMap: Record<string, string> = {
+        recordCount: "record_count",
+        generatedBy: "generated_by",
+        createdAt: "created_at",
+    };
+
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(report)) {
+        const snakeKey = keyMap[key] || key;
+        result[snakeKey] = value;
+    }
+    return result;
+}
+
 export const reportsService = {
     async getAll(): Promise<Report[]> {
+        // Changed order from created_at to id to avoid 400 error if column is missing/named differently
         const { data, error } = await supabase
             .from("reports")
             .select("*")
-            .order("created_at", { ascending: false });
+            .order("id", { ascending: false });
         if (error) throw new Error(error.message);
         return data || [];
     },
 
     async create(report: InsertReport): Promise<Report> {
+        const dbReport = reportToSnakeCase(report as any);
         const { data, error } = await supabase
             .from("reports")
-            .insert(report)
+            .insert(dbReport)
             .select()
             .single();
         if (error) throw new Error(error.message);
@@ -763,7 +781,7 @@ export const reportsService = {
             .from("reports")
             .select("*")
             .eq("category", category)
-            .order("created_at", { ascending: false });
+            .order("id", { ascending: false });
         if (error) throw new Error(error.message);
         return data || [];
     },

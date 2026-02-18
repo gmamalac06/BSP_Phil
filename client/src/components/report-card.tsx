@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ReportCardProps {
@@ -58,9 +58,10 @@ export function ReportCard({ report, onGenerate, onDownload, onPrint }: ReportCa
             size="sm"
             className="flex-1"
             onClick={() => onGenerate?.(report.id)}
-            data-testid={`button-generate-${report.id}`}
+            data-testid={`button-view-${report.id}`}
           >
-            Generate
+            <Eye className="h-4 w-4 mr-2" />
+            View
           </Button>
           <Button
             variant="outline"

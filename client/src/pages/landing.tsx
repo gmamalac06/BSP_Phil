@@ -129,7 +129,6 @@ export default function Landing() {
             <div className="relative">
               <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Enter Scout ID"
                 className="pl-9 w-40 md:w-48"
                 value={scoutIdInput}
                 onChange={(e) => setScoutIdInput(e.target.value)}
@@ -157,7 +156,7 @@ export default function Landing() {
           </div>
           <h1 className="text-5xl font-bold mb-4">ScoutSmart</h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Empowering the Boy Scouts of the Philippines with modern management solutions
+            BOY SCOUT OF THE PHILIPPINES MAGUINDANAO AND COTABATO CITY CHAPTER
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             {!loading && (
@@ -185,13 +184,13 @@ export default function Landing() {
             </Button>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* Event Carousel Section */}
-      <EventCarouselSection />
+      < EventCarouselSection />
 
       {/* About Us Section */}
-      <section id="about" className="py-20 px-4 bg-background">
+      < section id="about" className="py-20 px-4 bg-background" >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4">About Us</h2>
@@ -233,10 +232,10 @@ export default function Landing() {
             </Card>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* Mission & Vision Section */}
-      <section className="py-20 px-4 bg-muted/50">
+      < section className="py-20 px-4 bg-muted/50" >
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12">
             {/* Mission */}
@@ -324,12 +323,6 @@ export default function Landing() {
             Join us in modernizing scout management for the digital age
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" onClick={() => setLocation("/login")}>
-              Sign In to ScoutSmart
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => setLocation("/register")}>
-              Create an Account
-            </Button>
           </div>
         </div>
       </section>
