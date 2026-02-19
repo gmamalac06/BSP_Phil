@@ -167,6 +167,35 @@ function scoutToSnakeCase(scout: Record<string, any>): Record<string, any> {
     return result;
 }
 
+// Helper: transform snake_case DB fields to camelCase for frontend
+function scoutToCamelCase(scout: Record<string, any>): Record<string, any> {
+    const keyMap: Record<string, string> = {
+        unit_id: "unitId",
+        school_id: "schoolId",
+        membership_years: "membershipYears",
+        date_of_birth: "dateOfBirth",
+        parent_guardian: "parentGuardian",
+        contact_number: "contactNumber",
+        payment_proof: "paymentProof",
+        profile_photo: "profilePhoto",
+        blood_type: "bloodType",
+        emergency_contact: "emergencyContact",
+        created_at: "createdAt",
+    };
+
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(scout)) {
+        // Skip relation objects returned by Supabase joins as they are already objects
+        if (key === "unit" || key === "school") {
+            result[key] = value;
+            continue;
+        }
+        const camelKey = keyMap[key] || key;
+        result[camelKey] = value;
+    }
+    return result;
+}
+
 export const scoutsService = {
     async getAll(filters?: {
         status?: string;
@@ -190,7 +219,7 @@ export const scoutsService = {
 
         const { data, error } = await query;
         if (error) throw new Error(error.message);
-        return data || [];
+        return (data || []).map(scout => scoutToCamelCase(scout) as Scout);
     },
 
     async getById(id: string): Promise<Scout> {
@@ -200,7 +229,7 @@ export const scoutsService = {
             .eq("id", id)
             .single();
         if (error) throw new Error(error.message);
-        return data;
+        return scoutToCamelCase(data) as Scout;
     },
 
     async getByUid(uid: string): Promise<Scout | null> {
@@ -210,7 +239,7 @@ export const scoutsService = {
             .eq("uid", uid)
             .single();
         if (error && error.code !== "PGRST116") throw new Error(error.message);
-        return data;
+        return data ? (scoutToCamelCase(data) as Scout) : null;
     },
 
     async create(scout: InsertScout): Promise<Scout> {

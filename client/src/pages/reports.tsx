@@ -321,12 +321,23 @@ export default function Reports() {
     }
   };
 
-  const handleGenerateReport = (reportId: string) => {
+  const handleViewReport = (reportId: string) => {
     const report = reports.find(r => r.id === reportId);
     if (report) {
       setSelectedReport(report);
       setShowViewReport(true);
     }
+  };
+
+  const handleDownloadReport = (reportId: string) => {
+    // Re-download is tricky because we don't store the file content, only metadata.
+    // Ideally we'd re-generate based on the description/metadata, but for now let's just show a toast
+    // explaining this limitation, or re-run the generation if we can infer the type.
+    // For simplicity given the scope, we'll inform the user.
+    toast({
+      title: "Download info",
+      description: "This is a historical record. Please generate a new report to get the latest data.",
+    });
   };
 
   const handlePrintReport = (reportId: string) => {
@@ -468,9 +479,7 @@ export default function Reports() {
                     <div key={report.id} className="relative group">
                       <ReportCard
                         report={report as any}
-                        onGenerate={handleGenerateReport}
-                        onDownload={handleGenerateReport}
-                        onPrint={handlePrintReport}
+                        onGenerate={handleViewReport}
                       />
                       <Button
                         variant="destructive"
@@ -503,6 +512,8 @@ export default function Reports() {
         report={selectedReport}
         open={showViewReport}
         onOpenChange={setShowViewReport}
+        onDownload={handleDownloadReport}
+        onPrint={handlePrintReport}
       />
     </div>
   );

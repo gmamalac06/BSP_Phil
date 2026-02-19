@@ -124,27 +124,7 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary/10 via-background to-chart-3/10 py-20 px-4 relative">
         {/* Scout ID Lookup - Top Right */}
-        <div className="absolute top-4 right-4 md:top-8 md:right-8">
-          <form onSubmit={handleScoutIdLookup} className="flex gap-2 items-center">
-            <div className="relative">
-              <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                className="pl-9 w-40 md:w-48"
-                value={scoutIdInput}
-                onChange={(e) => setScoutIdInput(e.target.value)}
-                disabled={isLookingUp}
-              />
-            </div>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isLookingUp}
-              title="Check Membership Status"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
-        </div>
+
 
         <div className="max-w-6xl mx-auto text-center">
           <div className="flex justify-center mb-6">

@@ -16,6 +16,8 @@ interface ViewReportDialogProps {
     } | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onDownload?: (id: string) => void;
+    onPrint?: (id: string) => void;
 }
 
 const categoryColors: Record<string, string> = {
@@ -25,7 +27,7 @@ const categoryColors: Record<string, string> = {
     financial: "bg-chart-4 text-white",
 };
 
-export function ViewReportDialog({ report, open, onOpenChange }: ViewReportDialogProps) {
+export function ViewReportDialog({ report, open, onOpenChange, onDownload, onPrint }: ViewReportDialogProps) {
     if (!report) return null;
 
     return (
@@ -77,8 +79,16 @@ export function ViewReportDialog({ report, open, onOpenChange }: ViewReportDialo
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button onClick={() => onOpenChange(false)}>Close</Button>
+                <DialogFooter className="flex gap-2 sm:justify-between">
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => onPrint?.(report.id)}>
+                            Print
+                        </Button>
+                        <Button onClick={() => onDownload?.(report.id)}>
+                            Download
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

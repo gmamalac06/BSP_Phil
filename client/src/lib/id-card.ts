@@ -16,7 +16,7 @@ export interface IDCardData {
  */
 export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   const { scout, schoolName, unitName, profilePhotoUrl } = data;
-  
+
   // Create PDF with ID card dimensions (85.6mm x 53.98mm)
   const pdf = new jsPDF({
     orientation: "landscape",
@@ -31,7 +31,7 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   // Header bar
   pdf.setFillColor(25, 118, 210); // Blue header
   pdf.rect(0, 0, 85.6, 8, "F");
-  
+
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(7);
   pdf.setFont("helvetica", "bold");
@@ -41,7 +41,7 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   const photoX = 3;
   const photoY = 11;
   const photoSize = 20; // 20mm x 20mm (slightly smaller than 1x1 inch for better fit)
-  
+
   if (profilePhotoUrl) {
     try {
       pdf.addImage(profilePhotoUrl, "JPEG", photoX, photoY, photoSize, photoSize);
@@ -57,8 +57,8 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
     pdf.rect(photoX, photoY, photoSize, photoSize, "F");
     pdf.setTextColor(100, 100, 100);
     pdf.setFontSize(6);
-    pdf.text("2x2", photoX + photoSize/2, photoY + photoSize/2, { align: "center" });
-    pdf.text("PHOTO", photoX + photoSize/2, photoY + photoSize/2 + 3, { align: "center" });
+    pdf.text("2x2", photoX + photoSize / 2, photoY + photoSize / 2, { align: "center" });
+    pdf.text("PHOTO", photoX + photoSize / 2, photoY + photoSize / 2 + 3, { align: "center" });
   }
 
   // Scout Information (right side)
@@ -70,7 +70,7 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
 
   pdf.setFontSize(6);
   pdf.setFont("helvetica", "normal");
-  
+
   let yPos = 18;
   const lineHeight = 3.5;
 
@@ -86,7 +86,7 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   pdf.text("Gender:", 26, yPos);
   pdf.setFont("helvetica", "normal");
   pdf.text(scout.gender || "N/A", 36, yPos);
-  
+
   if (scout.bloodType) {
     pdf.setFont("helvetica", "bold");
     pdf.text("Blood:", 50, yPos);
@@ -152,6 +152,92 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   pdf.setLineWidth(0.5);
   pdf.rect(0.5, 0.5, 84.6, 52.98);
 
+  // --- BACK SIDE ---
+  pdf.addPage();
+
+  // Set background color
+  pdf.setFillColor(240, 248, 255); // Light blue background
+  pdf.rect(0, 0, 85.6, 53.98, "F");
+
+  // Header bar
+  pdf.setFillColor(25, 118, 210); // Blue header
+  pdf.rect(0, 0, 85.6, 8, "F");
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(7);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("SCOUT IDENTIFICATION CARD - BACK", 42.8, 5, { align: "center" });
+
+  // Contact Information
+  pdf.setTextColor(0, 0, 0);
+
+  // Emergency Contact Box
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(200, 200, 200);
+  pdf.rect(3, 11, 79.6, 25, "FD"); // Filled with white, drawn border
+
+  pdf.setFontSize(8);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("Emergency Contact Information", 5, 15);
+
+  let backY = 20;
+  const backLineHeight = 5;
+
+  pdf.setFontSize(7);
+
+  if (scout.parentGuardian) {
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Contact Person:", 5, backY);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(scout.parentGuardian, 25, backY);
+    backY += backLineHeight;
+  }
+
+  if (scout.emergencyContact) {
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Contact #:", 5, backY);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(scout.emergencyContact, 25, backY);
+    backY += backLineHeight;
+  }
+
+  if (scout.contactNumber) {
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Scout Contact:", 5, backY);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(scout.contactNumber, 25, backY);
+  }
+
+  // Mission & Vision
+  const mvY = 39;
+  pdf.setFontSize(6);
+
+  // Vision
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(25, 118, 210);
+  pdf.text("BSP Vision:", 3, mvY);
+  pdf.setFont("helvetica", "italic");
+  pdf.setTextColor(80, 80, 80);
+  const visionText = "To train and develop Filipino youth with practical outdoor and citizenship skill necessary for nation building and to promote world brotherhood and peace.";
+  const splitVision = pdf.splitTextToSize(visionText, 78);
+  pdf.text(splitVision, 15, mvY);
+
+  // Mission
+  const missionY = mvY + (splitVision.length * 2.5) + 2;
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(25, 118, 210);
+  pdf.text("BSP Mission:", 3, missionY);
+  pdf.setFont("helvetica", "italic");
+  pdf.setTextColor(80, 80, 80);
+  const missionText = "To help young people develop character, citizenship, and physical and mental fitness through challenging programs in a caring, nurturing environment.";
+  const splitMission = pdf.splitTextToSize(missionText, 78);
+  pdf.text(splitMission, 17, missionY);
+
+  // Border (Back)
+  pdf.setDrawColor(25, 118, 210);
+  pdf.setLineWidth(0.5);
+  pdf.rect(0.5, 0.5, 84.6, 52.98);
+
   // Download the PDF
   const filename = `scout_id_${scout.uid}_${scout.name.replace(/\s+/g, "_")}.pdf`;
   pdf.save(filename);
@@ -211,7 +297,7 @@ async function addIDCardToPage(
   // Header
   pdf.setFillColor(25, 118, 210);
   pdf.rect(x, y, 85.6, 10, "F");
-  
+
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(8);
   pdf.setFont("helvetica", "bold");
@@ -232,7 +318,7 @@ async function addIDCardToPage(
 
   pdf.setFontSize(7);
   pdf.setFont("helvetica", "normal");
-  
+
   let yPos = y + 21;
   const lineHeight = 4;
 

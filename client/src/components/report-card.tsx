@@ -63,22 +63,6 @@ export function ReportCard({ report, onGenerate, onDownload, onPrint }: ReportCa
             <Eye className="h-4 w-4 mr-2" />
             View
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onDownload?.(report.id)}
-            data-testid={`button-download-${report.id}`}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onPrint?.(report.id)}
-            data-testid={`button-print-${report.id}`}
-          >
-            <Printer className="h-4 w-4" />
-          </Button>
         </div>
       </CardContent>
     </Card>
