@@ -9,7 +9,10 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, RotateCcw } from "lucide-react";
+import { Search, Filter, RotateCcw, Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
 import { useState, useMemo, useEffect } from "react";
@@ -29,6 +32,13 @@ export function FilterPanel({ onFilter, initialFilters }: FilterPanelProps) {
   const { data: schools = [] } = useSchools();
   const { data: units = [] } = useUnits();
   const [localFilters, setLocalFilters] = useState<any>(initialFilters || {});
+
+  const [municipalitySearchOpen, setMunicipalitySearchOpen] = useState(false);
+  const [municipalitySearch, setMunicipalitySearch] = useState("");
+  const [schoolSearchOpen, setSchoolSearchOpen] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [unitSearchOpen, setUnitSearchOpen] = useState(false);
+  const [unitSearch, setUnitSearch] = useState("");
 
   // Sync initial filters when they change (e.g. from URL params)
   useEffect(() => {
@@ -120,64 +130,225 @@ export function FilterPanel({ onFilter, initialFilters }: FilterPanelProps) {
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 flex flex-col">
           <Label htmlFor="municipality">Municipality</Label>
-          <Select
-            value={localFilters.municipality || "all"}
-            onValueChange={(value) => handleFilterChange("municipality", value)}
-          >
-            <SelectTrigger id="municipality" data-testid="select-municipality">
-              <SelectValue placeholder="All municipalities" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Municipalities</SelectItem>
-              {municipalities.map((municipality) => (
-                <SelectItem key={municipality} value={municipality}>
-                  {municipality}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={municipalitySearchOpen} onOpenChange={setMunicipalitySearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={municipalitySearchOpen}
+                className="w-full justify-between font-normal"
+              >
+                {localFilters.municipality && localFilters.municipality !== "all"
+                  ? localFilters.municipality
+                  : "All municipalities"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
+              <Command>
+                <CommandInput
+                  placeholder="Search municipality..."
+                  value={municipalitySearch}
+                  onValueChange={setMunicipalitySearch}
+                />
+                <CommandList>
+                  <CommandEmpty>No municipality found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        handleFilterChange("municipality", "all");
+                        setMunicipalitySearch("");
+                        setMunicipalitySearchOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          (!localFilters.municipality || localFilters.municipality === "all") ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      All Municipalities
+                    </CommandItem>
+                    {municipalities
+                      .filter((m) => m.toLowerCase().includes(municipalitySearch.toLowerCase()))
+                      .map((municipality) => (
+                        <CommandItem
+                          key={municipality}
+                          value={municipality}
+                          onSelect={(currentValue) => {
+                            const selected = municipalities.find((m) => m.toLowerCase() === currentValue.toLowerCase());
+                            if (selected) {
+                              handleFilterChange("municipality", selected);
+                              setMunicipalitySearch("");
+                            }
+                            setMunicipalitySearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              localFilters.municipality === municipality ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {municipality}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 flex flex-col">
           <Label htmlFor="school">School</Label>
-          <Select
-            value={localFilters.school || "all"}
-            onValueChange={(value) => handleFilterChange("school", value)}
-          >
-            <SelectTrigger id="school" data-testid="select-school-filter">
-              <SelectValue placeholder="All schools" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Schools</SelectItem>
-              {schools.map((school) => (
-                <SelectItem key={school.id} value={school.id}>
-                  {school.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={schoolSearchOpen} onOpenChange={setSchoolSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={schoolSearchOpen}
+                className="w-full justify-between font-normal"
+              >
+                {localFilters.school && localFilters.school !== "all"
+                  ? schools.find((s) => s.id === localFilters.school)?.name || "All schools"
+                  : "All schools"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
+              <Command>
+                <CommandInput
+                  placeholder="Search school..."
+                  value={schoolSearch}
+                  onValueChange={setSchoolSearch}
+                />
+                <CommandList>
+                  <CommandEmpty>No school found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        handleFilterChange("school", "all");
+                        setSchoolSearch("");
+                        setSchoolSearchOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          (!localFilters.school || localFilters.school === "all") ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      All Schools
+                    </CommandItem>
+                    {schools
+                      .filter((s) => s.name.toLowerCase().includes(schoolSearch.toLowerCase()))
+                      .slice(0, 50)
+                      .map((school) => (
+                        <CommandItem
+                          key={school.id}
+                          value={school.name}
+                          onSelect={(currentValue) => {
+                            const selected = schools.find((s) => s.name.toLowerCase() === currentValue.toLowerCase());
+                            if (selected) {
+                              handleFilterChange("school", selected.id);
+                              setSchoolSearch("");
+                            }
+                            setSchoolSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              localFilters.school === school.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {school.name}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 flex flex-col">
           <Label htmlFor="unit">Unit</Label>
-          <Select
-            value={localFilters.unitId || "all"}
-            onValueChange={(value) => handleFilterChange("unitId", value)}
-          >
-            <SelectTrigger id="unit" data-testid="select-unit-filter">
-              <SelectValue placeholder="All units" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Units</SelectItem>
-              {units.map((unit) => (
-                <SelectItem key={unit.id} value={unit.id}>
-                  {unit.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={unitSearchOpen} onOpenChange={setUnitSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={unitSearchOpen}
+                className="w-full justify-between font-normal"
+              >
+                {localFilters.unitId && localFilters.unitId !== "all"
+                  ? units.find((u) => u.id === localFilters.unitId)?.name || "All units"
+                  : "All units"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
+              <Command>
+                <CommandInput
+                  placeholder="Search unit..."
+                  value={unitSearch}
+                  onValueChange={setUnitSearch}
+                />
+                <CommandList>
+                  <CommandEmpty>No unit found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        handleFilterChange("unitId", "all");
+                        setUnitSearch("");
+                        setUnitSearchOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          (!localFilters.unitId || localFilters.unitId === "all") ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      All Units
+                    </CommandItem>
+                    {units
+                      .filter((u) => u.name.toLowerCase().includes(unitSearch.toLowerCase()))
+                      .slice(0, 50)
+                      .map((unit) => (
+                        <CommandItem
+                          key={unit.id}
+                          value={unit.name}
+                          onSelect={(currentValue) => {
+                            const selected = units.find((u) => u.name.toLowerCase() === currentValue.toLowerCase());
+                            if (selected) {
+                              handleFilterChange("unitId", selected.id);
+                              setUnitSearch("");
+                            }
+                            setUnitSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              localFilters.unitId === unit.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {unit.name}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="grid grid-cols-2 gap-2">

@@ -11,7 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Upload, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, CheckCircle2, Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
 import { validateFile } from "@/lib/storage";
@@ -25,6 +28,11 @@ export function RegistrationForm({ onSubmit, isSubmitting = false }: Registratio
   const [step, setStep] = useState(1);
   const { data: schools = [], isLoading: schoolsLoading } = useSchools();
   const { data: units = [], isLoading: unitsLoading } = useUnits();
+
+  const [schoolSearchOpen, setSchoolSearchOpen] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [unitSearchOpen, setUnitSearchOpen] = useState(false);
+  const [unitSearch, setUnitSearch] = useState("");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -281,35 +289,121 @@ export function RegistrationForm({ onSubmit, isSubmitting = false }: Registratio
 
         {step === 3 && (
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col">
               <Label htmlFor="school">School *</Label>
-              <Select value={formData.school} onValueChange={(v) => updateField("school", v)}>
-                <SelectTrigger id="school" data-testid="select-school">
-                  <SelectValue placeholder={schoolsLoading ? "Loading schools..." : "Select school"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools.map((school) => (
-                    <SelectItem key={school.id} value={school.id}>
-                      {school.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={schoolSearchOpen} onOpenChange={setSchoolSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={schoolSearchOpen}
+                    className="w-full justify-between font-normal"
+                    disabled={schoolsLoading}
+                  >
+                    {formData.school
+                      ? schools.find((s) => s.id === formData.school)?.name || "Select school"
+                      : schoolsLoading ? "Loading schools..." : "Select school"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
+                  <Command>
+                    <CommandInput
+                      placeholder="Search school..."
+                      value={schoolSearch}
+                      onValueChange={setSchoolSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No school found.</CommandEmpty>
+                      <CommandGroup>
+                        {schools
+                          .filter((s) => s.name.toLowerCase().includes(schoolSearch.toLowerCase()))
+                          .slice(0, 50)
+                          .map((school) => (
+                            <CommandItem
+                              key={school.id}
+                              value={school.name}
+                              onSelect={(currentValue) => {
+                                const selected = schools.find((s) => s.name.toLowerCase() === currentValue.toLowerCase());
+                                if (selected) {
+                                  updateField("school", selected.id);
+                                  setSchoolSearch("");
+                                }
+                                setSchoolSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.school === school.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {school.name}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col">
               <Label htmlFor="unit">Unit *</Label>
-              <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
-                <SelectTrigger id="unit" data-testid="select-unit">
-                  <SelectValue placeholder={unitsLoading ? "Loading units..." : "Select unit"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {units.map((unit) => (
-                    <SelectItem key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={unitSearchOpen} onOpenChange={setUnitSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={unitSearchOpen}
+                    className="w-full justify-between font-normal"
+                    disabled={unitsLoading}
+                  >
+                    {formData.unit
+                      ? units.find((u) => u.id === formData.unit)?.name || "Select unit"
+                      : unitsLoading ? "Loading units..." : "Select unit"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
+                  <Command>
+                    <CommandInput
+                      placeholder="Search unit..."
+                      value={unitSearch}
+                      onValueChange={setUnitSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No unit found.</CommandEmpty>
+                      <CommandGroup>
+                        {units
+                          .filter((u) => u.name.toLowerCase().includes(unitSearch.toLowerCase()))
+                          .slice(0, 50)
+                          .map((unit) => (
+                            <CommandItem
+                              key={unit.id}
+                              value={unit.name}
+                              onSelect={(currentValue) => {
+                                const selected = units.find((u) => u.name.toLowerCase() === currentValue.toLowerCase());
+                                if (selected) {
+                                  updateField("unit", selected.id);
+                                  setUnitSearch("");
+                                }
+                                setUnitSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.unit === unit.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {unit.name}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="rank">Current Rank</Label>

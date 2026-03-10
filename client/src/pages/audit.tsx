@@ -11,7 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Download, Filter, RefreshCw } from "lucide-react";
+import { Search, Download, Filter, RefreshCw, Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useAuditLogs } from "@/hooks/useAudit";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, generateFilename, formatDateTimeForExport, ExportColumn } from "@/lib/export";
@@ -21,6 +24,8 @@ export default function AuditTrail() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [userFilter, setUserFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
+  const [userSearchOpen, setUserSearchOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
 
   const { data: logs = [], isLoading, refetch } = useAuditLogs();
   const { toast } = useToast();
@@ -85,8 +90,8 @@ export default function AuditTrail() {
     }
 
     const columns: ExportColumn[] = [
-      { 
-        key: "createdAt", 
+      {
+        key: "createdAt",
         label: "Timestamp",
         format: formatDateTimeForExport
       },
@@ -128,8 +133,8 @@ export default function AuditTrail() {
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleExportLogs}
             disabled={filteredLogs.length === 0}
             data-testid="button-export-logs"
@@ -181,21 +186,78 @@ export default function AuditTrail() {
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col">
               <Label htmlFor="user">User</Label>
-              <Select value={userFilter} onValueChange={setUserFilter}>
-                <SelectTrigger id="user" data-testid="select-user">
-                  <SelectValue placeholder="All users" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  {uniqueUsers.filter(userId => userId && userId.trim() !== "").map((userId) => (
-                    <SelectItem key={userId} value={userId}>
-                      {userId}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={userSearchOpen} onOpenChange={setUserSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={userSearchOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {userFilter && userFilter !== "all"
+                      ? userFilter
+                      : "All users"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
+                  <Command>
+                    <CommandInput
+                      placeholder="Search user..."
+                      value={userSearch}
+                      onValueChange={setUserSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No user found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setUserFilter("all");
+                            setUserSearch("");
+                            setUserSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              (!userFilter || userFilter === "all") ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          All Users
+                        </CommandItem>
+                        {uniqueUsers
+                          .filter(userId => userId && userId.trim() !== "")
+                          .filter((u) => u.toLowerCase().includes(userSearch.toLowerCase()))
+                          .map((userId) => (
+                            <CommandItem
+                              key={userId}
+                              value={userId}
+                              onSelect={(currentValue) => {
+                                const selected = uniqueUsers.find((u) => u.toLowerCase() === currentValue.toLowerCase());
+                                if (selected) {
+                                  setUserFilter(selected);
+                                  setUserSearch("");
+                                }
+                                setUserSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  userFilter === userId ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {userId}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">

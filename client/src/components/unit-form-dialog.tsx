@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useSchools } from "@/hooks/useSchools";
 import type { Unit } from "@shared/schema";
 
@@ -23,6 +27,8 @@ export function UnitFormDialog({
   isLoading,
 }: UnitFormDialogProps) {
   const { data: schools = [] } = useSchools();
+  const [schoolSearchOpen, setSchoolSearchOpen] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     leader: "",
@@ -84,24 +90,78 @@ export function UnitFormDialog({
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col">
               <Label htmlFor="school">School</Label>
-              <Select
-                value={formData.schoolId}
-                onValueChange={(value) => setFormData({ ...formData, schoolId: value })}
-              >
-                <SelectTrigger id="school">
-                  <SelectValue placeholder="Select a school (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No school</SelectItem>
-                  {schools.map((school) => (
-                    <SelectItem key={school.id} value={school.id}>
-                      {school.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={schoolSearchOpen} onOpenChange={setSchoolSearchOpen} modal={true}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={schoolSearchOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {formData.schoolId && formData.schoolId !== "none"
+                      ? schools.find((s) => s.id === formData.schoolId)?.name || "Select a school (optional)"
+                      : "Select a school (optional)"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)", zIndex: 10000 }}>
+                  <Command>
+                    <CommandInput
+                      placeholder="Search school..."
+                      value={schoolSearch}
+                      onValueChange={setSchoolSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No school found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="None"
+                          onSelect={() => {
+                            setFormData({ ...formData, schoolId: "none" });
+                            setSchoolSearch("");
+                            setSchoolSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.schoolId === "none" ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          No school
+                        </CommandItem>
+                        {schools
+                          .filter((s) => s.name.toLowerCase().includes(schoolSearch.toLowerCase()))
+                          .slice(0, 50)
+                          .map((school) => (
+                            <CommandItem
+                              key={school.id}
+                              value={school.name}
+                              onSelect={(currentValue) => {
+                                const selected = schools.find((s) => s.name.toLowerCase() === currentValue.toLowerCase());
+                                if (selected) {
+                                  setFormData({ ...formData, schoolId: selected.id });
+                                  setSchoolSearch("");
+                                }
+                                setSchoolSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.schoolId === school.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {school.name}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status *</Label>

@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
@@ -26,6 +30,11 @@ export function ScoutFormDialog({
 }: ScoutFormDialogProps) {
   const { data: schools = [] } = useSchools();
   const { data: units = [] } = useUnits();
+
+  const [schoolSearchOpen, setSchoolSearchOpen] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [unitSearchOpen, setUnitSearchOpen] = useState(false);
+  const [unitSearch, setUnitSearch] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -302,43 +311,151 @@ export function ScoutFormDialog({
             <div className="space-y-4">
               <h3 className="font-semibold text-sm">Scout Affiliation</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2 flex flex-col">
                   <Label htmlFor="school">School</Label>
-                  <Select
-                    value={formData.schoolId}
-                    onValueChange={(value) => setFormData({ ...formData, schoolId: value })}
-                  >
-                    <SelectTrigger id="school">
-                      <SelectValue placeholder="Select school (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No school</SelectItem>
-                      {schools.map((school) => (
-                        <SelectItem key={school.id} value={school.id}>
-                          {school.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={schoolSearchOpen} onOpenChange={setSchoolSearchOpen} modal={true}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={schoolSearchOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.schoolId && formData.schoolId !== "none"
+                          ? schools.find((s) => s.id === formData.schoolId)?.name || "Select school (optional)"
+                          : "Select school (optional)"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)", zIndex: 10000 }}>
+                      <Command>
+                        <CommandInput
+                          placeholder="Search school..."
+                          value={schoolSearch}
+                          onValueChange={setSchoolSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No school found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="None"
+                              onSelect={() => {
+                                setFormData({ ...formData, schoolId: "none" });
+                                setSchoolSearch("");
+                                setSchoolSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.schoolId === "none" ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              No school
+                            </CommandItem>
+                            {schools
+                              .filter((s) => s.name.toLowerCase().includes(schoolSearch.toLowerCase()))
+                              .slice(0, 50)
+                              .map((school) => (
+                                <CommandItem
+                                  key={school.id}
+                                  value={school.name}
+                                  onSelect={(currentValue) => {
+                                    const selected = schools.find((s) => s.name.toLowerCase() === currentValue.toLowerCase());
+                                    if (selected) {
+                                      setFormData({ ...formData, schoolId: selected.id });
+                                      setSchoolSearch("");
+                                    }
+                                    setSchoolSearchOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.schoolId === school.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {school.name}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 flex flex-col">
                   <Label htmlFor="unit">Unit</Label>
-                  <Select
-                    value={formData.unitId}
-                    onValueChange={(value) => setFormData({ ...formData, unitId: value })}
-                  >
-                    <SelectTrigger id="unit">
-                      <SelectValue placeholder="Select unit (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No unit</SelectItem>
-                      {units.map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id}>
-                          {unit.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={unitSearchOpen} onOpenChange={setUnitSearchOpen} modal={true}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={unitSearchOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.unitId && formData.unitId !== "none"
+                          ? units.find((u) => u.id === formData.unitId)?.name || "Select unit (optional)"
+                          : "Select unit (optional)"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start" style={{ width: "var(--radix-popover-trigger-width)", zIndex: 10000 }}>
+                      <Command>
+                        <CommandInput
+                          placeholder="Search unit..."
+                          value={unitSearch}
+                          onValueChange={setUnitSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No unit found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="None"
+                              onSelect={() => {
+                                setFormData({ ...formData, unitId: "none" });
+                                setUnitSearch("");
+                                setUnitSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.unitId === "none" ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              No unit
+                            </CommandItem>
+                            {units
+                              .filter((u) => u.name.toLowerCase().includes(unitSearch.toLowerCase()))
+                              .slice(0, 50)
+                              .map((unit) => (
+                                <CommandItem
+                                  key={unit.id}
+                                  value={unit.name}
+                                  onSelect={(currentValue) => {
+                                    const selected = units.find((u) => u.name.toLowerCase() === currentValue.toLowerCase());
+                                    if (selected) {
+                                      setFormData({ ...formData, unitId: selected.id });
+                                      setUnitSearch("");
+                                    }
+                                    setUnitSearchOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.unitId === unit.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {unit.name}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
