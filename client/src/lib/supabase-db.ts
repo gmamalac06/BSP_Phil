@@ -201,6 +201,10 @@ export const scoutsService = {
         status?: string;
         schoolId?: string;
         unitId?: string;
+        email?: string;
+        search?: string;
+        gender?: string;
+        municipality?: string;
     }): Promise<Scout[]> {
         let query = supabase
             .from("scouts")
@@ -210,16 +214,80 @@ export const scoutsService = {
         if (filters?.status && filters.status !== "all") {
             query = query.eq("status", filters.status);
         }
-        if (filters?.schoolId) {
+        if (filters?.schoolId && filters.schoolId !== "all") {
             query = query.eq("school_id", filters.schoolId);
         }
-        if (filters?.unitId) {
+        if (filters?.unitId && filters.unitId !== "all") {
             query = query.eq("unit_id", filters.unitId);
+        }
+        if (filters?.email) {
+            query = query.eq("email", filters.email);
+        }
+        if (filters?.gender && filters.gender !== "all") {
+            query = query.eq("gender", filters.gender);
+        }
+        if (filters?.municipality && filters.municipality !== "all") {
+            query = query.ilike("municipality", `%${filters.municipality}%`);
+        }
+        if (filters?.search) {
+            query = query.or(`name.ilike.%${filters.search}%,uid.ilike.%${filters.search}%`);
         }
 
         const { data, error } = await query;
         if (error) throw new Error(error.message);
         return (data || []).map(scout => scoutToCamelCase(scout) as Scout);
+    },
+
+    async getPaginated(
+        page: number,
+        limit: number,
+        filters?: {
+            status?: string;
+            schoolId?: string;
+            unitId?: string;
+            email?: string;
+            search?: string;
+            gender?: string;
+            municipality?: string;
+        }
+    ): Promise<{ data: Scout[], count: number }> {
+        let query = supabase
+            .from("scouts")
+            .select("*, unit:units(*), school:schools(*)", { count: 'exact' })
+            .order("name");
+
+        if (filters?.status && filters.status !== "all") {
+            query = query.eq("status", filters.status);
+        }
+        if (filters?.schoolId && filters.schoolId !== "all") {
+            query = query.eq("school_id", filters.schoolId);
+        }
+        if (filters?.unitId && filters.unitId !== "all") {
+            query = query.eq("unit_id", filters.unitId);
+        }
+        if (filters?.email) {
+            query = query.eq("email", filters.email);
+        }
+        if (filters?.gender && filters.gender !== "all") {
+            query = query.eq("gender", filters.gender);
+        }
+        if (filters?.municipality && filters.municipality !== "all") {
+            query = query.ilike("municipality", `%${filters.municipality}%`);
+        }
+        if (filters?.search) {
+            query = query.or(`name.ilike.%${filters.search}%,uid.ilike.%${filters.search}%`);
+        }
+
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+        query = query.range(from, to);
+
+        const { data, count, error } = await query;
+        if (error) throw new Error(error.message);
+        return {
+            data: (data || []).map(scout => scoutToCamelCase(scout) as Scout),
+            count: count || 0
+        };
     },
 
     async getById(id: string): Promise<Scout> {
@@ -643,28 +711,37 @@ export const carouselService = {
 
 // ============== STATS ==============
 export const statsService = {
-    async getDashboardStats(): Promise<{
+    async getDashboardStats(filters?: { schoolId?: string; unitId?: string; email?: string }): Promise<{
         totalScouts: number;
         activeScouts: number;
         pendingScouts: number;
         upcomingActivities: number;
     }> {
-        // Get total scouts
-        const { count: totalScouts } = await supabase
-            .from("scouts")
-            .select("*", { count: "exact", head: true });
+        let baseCount = supabase.from("scouts").select("*", { count: "exact", head: true });
+        let activeCount = supabase.from("scouts").select("*", { count: "exact", head: true }).eq("status", "active");
+        let pendingCount = supabase.from("scouts").select("*", { count: "exact", head: true }).eq("status", "pending");
 
-        // Get active scouts
-        const { count: activeScouts } = await supabase
-            .from("scouts")
-            .select("*", { count: "exact", head: true })
-            .eq("status", "active");
+        if (filters?.schoolId) {
+            baseCount = baseCount.eq("school_id", filters.schoolId);
+            activeCount = activeCount.eq("school_id", filters.schoolId);
+            pendingCount = pendingCount.eq("school_id", filters.schoolId);
+        }
+        if (filters?.unitId) {
+            baseCount = baseCount.eq("unit_id", filters.unitId);
+            activeCount = activeCount.eq("unit_id", filters.unitId);
+            pendingCount = pendingCount.eq("unit_id", filters.unitId);
+        }
+        if (filters?.email) {
+            baseCount = baseCount.eq("email", filters.email);
+            activeCount = activeCount.eq("email", filters.email);
+            pendingCount = pendingCount.eq("email", filters.email);
+        }
 
-        // Get pending scouts
-        const { count: pendingScouts } = await supabase
-            .from("scouts")
-            .select("*", { count: "exact", head: true })
-            .eq("status", "pending");
+        const [
+            { count: totalScouts },
+            { count: activeScouts },
+            { count: pendingScouts }
+        ] = await Promise.all([baseCount, activeCount, pendingCount]);
 
         // Get upcoming activities
         const { count: upcomingActivities } = await supabase
