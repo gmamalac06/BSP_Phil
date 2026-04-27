@@ -69,7 +69,7 @@ export default function Dashboard() {
 
   const announcements = announcementsData.slice(0, 2).map(ann => ({
     ...ann,
-    date: new Date(ann.createdAt),
+    date: new Date(ann.createdAt || Date.now()),
   }));
 
   const upcomingActivities = activitiesData.slice(0, 2).map(act => ({
@@ -95,10 +95,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-4xl font-bold mb-2 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>Dashboard</h1>
+        <p className="text-muted-foreground animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
           Welcome back! Here's an overview of your scouting activities.
         </p>
       </div>
@@ -124,16 +124,28 @@ export default function Dashboard() {
 
       {/* Stats - Only show for non-scout users (admin/staff) */}
       {!isScoutUser && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <StatCard key={stat.title} {...stat} />
-          ))}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 stagger-children">
+          {stats.map((stat, index) => {
+            const cardColors = [
+              "bg-[hsl(203,30%,92%)] border-[hsl(203,30%,72%)]",
+              "bg-[hsl(197,40%,92%)] border-[hsl(197,40%,72%)]",
+              "bg-[hsl(30,50%,93%)] border-[hsl(30,50%,78%)]",
+              "bg-[hsl(30,20%,88%)] border-[hsl(30,20%,70%)]"
+            ];
+            return (
+              <StatCard 
+                key={stat.title} 
+                {...stat} 
+                className={cardColors[index % 4]}
+              />
+            );
+          })}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 stagger-children">
         <div className="lg:col-span-2 space-y-6">
-          <Card>
+          <Card className="animate-fade-in-up bg-[hsl(203,30%,95%)] border-[hsl(203,30%,75%)]">
             <CardHeader>
               <CardTitle>Recent Announcements</CardTitle>
             </CardHeader>
@@ -156,7 +168,7 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-6">
-          <Card>
+          <Card className="animate-fade-in-up bg-[hsl(197,40%,94%)] border-[hsl(197,40%,74%)]" style={{ animationDelay: "0.1s" }}>
             <CardHeader>
               <CardTitle>Upcoming Activities</CardTitle>
             </CardHeader>

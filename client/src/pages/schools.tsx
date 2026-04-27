@@ -11,6 +11,7 @@ import { exportToCSV, generateFilename, formatDateForExport, ExportColumn } from
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 import type { School } from "@shared/schema";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -33,12 +34,23 @@ export default function Schools() {
     setVisibleCount(ITEMS_PER_PAGE);
   }, [searchQuery]);
 
+  const { user, isAdmin } = useAuth();
+
+  // Role scoping: staff sees only their own school
+  const scopedSchools = useMemo(() => {
+    if (isAdmin) return schools;
+    if (user?.role === "staff" && user.schoolId) {
+      return schools.filter((s) => s.id === user.schoolId);
+    }
+    return schools;
+  }, [schools, isAdmin, user]);
+
   const filteredSchools = useMemo(() => {
-    let result = schools;
+    let result = scopedSchools;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = schools.filter(
+      result = scopedSchools.filter(
         (school) =>
           school.name.toLowerCase().includes(query) ||
           school.municipality.toLowerCase().includes(query) ||
@@ -54,7 +66,7 @@ export default function Schools() {
       if (!aHasLogo && bHasLogo) return 1;
       return a.name.localeCompare(b.name); // Secondary sort by name
     });
-  }, [schools, searchQuery]);
+  }, [scopedSchools, searchQuery]);
 
 
   const visibleSchools = useMemo(() => {

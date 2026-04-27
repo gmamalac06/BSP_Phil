@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { Scout } from "@shared/schema";
 import { generateScoutIDCard } from "@/lib/id-card";
 import { safeGetYear } from "@/lib/safe-date";
+import { getCurrentValidityYear } from "@/lib/scout-id";
 
 interface ScoutIDCardProps {
     scout: Scout;
@@ -34,7 +35,7 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
     };
 
     return (
-        <Card className="w-full max-w-lg overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+        <Card className="w-full max-w-lg overflow-hidden bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
             <CardContent className="p-0">
                 <div className="relative min-h-[220px]" style={{ perspective: "1000px" }}>
                     {/* Card Container with Flip Animation */}
@@ -52,7 +53,7 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                             style={{ backfaceVisibility: "hidden" }}
                         >
                             {/* Header */}
-                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white p-3 flex items-center justify-between">
+                            <div className="bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white p-3 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Shield className="h-5 w-5" />
                                     <span className="font-bold text-sm">BOY SCOUTS OF THE PHILIPPINES</span>
@@ -70,10 +71,10 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                                         <img
                                             src={scout.profilePhoto}
                                             alt={scout.name}
-                                            className="w-20 h-20 rounded-lg object-cover border-2 border-blue-300"
+                                            className="w-20 h-20 rounded-lg object-cover border-2 border-green-300"
                                         />
                                     ) : (
-                                        <div className="w-20 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-2 border-blue-300">
+                                        <div className="w-20 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-2 border-green-300">
                                             <User className="h-8 w-8 text-gray-400" />
                                         </div>
                                     )}
@@ -84,7 +85,7 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                                     <h3 className="font-bold text-lg truncate text-gray-900 dark:text-white">
                                         {scout.name}
                                     </h3>
-                                    <p className="text-sm font-mono text-blue-600 dark:text-blue-400">{scout.uid}</p>
+                                    <p className="text-sm font-mono text-green-600 dark:text-green-400">{scout.uid}</p>
 
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300 mt-2">
                                         {scout.rank && (
@@ -120,7 +121,9 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                             {/* Footer */}
                             <div className="px-4 pb-3 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                                 <span>Member since {safeGetYear((scout as any).created_at || scout.createdAt)}</span>
-                                <span>{scout.membershipYears || 0} year(s)</span>
+                                <span className="font-medium text-green-700 dark:text-green-400">
+                                    Valid {getCurrentValidityYear()}
+                                </span>
                             </div>
                         </div>
 
@@ -133,7 +136,7 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                             }}
                         >
                             {/* Header */}
-                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white p-3">
+                            <div className="bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white p-3">
                                 <span className="font-bold text-sm">SCOUT IDENTIFICATION CARD - BACK</span>
                             </div>
 
@@ -142,7 +145,7 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                                 {/* Emergency Contact */}
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 space-y-2">
                                     <h4 className="font-semibold text-sm flex items-center gap-2 text-gray-900 dark:text-white">
-                                        <Phone className="h-4 w-4 text-blue-600" />
+                                        <Phone className="h-4 w-4 text-green-600" />
                                         Emergency Contact
                                     </h4>
                                     {scout.parentGuardian && (
@@ -165,11 +168,11 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                                 {/* Mission & Vision */}
                                 <div className="text-xs space-y-2">
                                     <div>
-                                        <span className="font-semibold text-blue-700 dark:text-blue-400">BSP Vision:</span>
+                                        <span className="font-semibold text-green-700 dark:text-green-400">BSP Vision:</span>
                                         <p className="text-gray-600 dark:text-gray-300 italic">{BSP_VISION}</p>
                                     </div>
                                     <div>
-                                        <span className="font-semibold text-blue-700 dark:text-blue-400">BSP Mission:</span>
+                                        <span className="font-semibold text-green-700 dark:text-green-400">BSP Mission:</span>
                                         <p className="text-gray-600 dark:text-gray-300 italic">{BSP_MISSION}</p>
                                     </div>
                                 </div>
@@ -179,7 +182,7 @@ export function ScoutIDCard({ scout, schoolName, unitName }: ScoutIDCardProps) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="border-t border-blue-200 dark:border-blue-800 p-3 flex gap-2 bg-white/50 dark:bg-gray-900/50">
+                <div className="border-t border-green-200 dark:border-green-800 p-3 flex gap-2 bg-white/50 dark:bg-gray-900/50">
                     <Button
                         variant="outline"
                         size="sm"

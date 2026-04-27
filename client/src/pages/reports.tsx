@@ -1,367 +1,178 @@
 import { useState, useMemo } from "react";
-import { ReportCard } from "@/components/report-card";
-import { ViewReportDialog } from "@/components/view-report-dialog";
 import { SchoolMasterlistModal } from "@/components/school-masterlist-modal";
 import { FilterPanel } from "@/components/filter-panel";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Plus, Trash2, Eye } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useReports, useCreateReport } from "@/hooks/useReports";
-import { useScouts, ScoutWithRelations } from "@/hooks/useScouts";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useScouts } from "@/hooks/useScouts";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
 import { useActivities } from "@/hooks/useActivities";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCSV, generateFilename, formatDateForExport, formatDateTimeForExport, ExportColumn } from "@/lib/export";
-import { useAuth } from "@/hooks/useAuth";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { reportsService } from "@/lib/supabase-db";
+import { exportToCSV, generateFilename, formatDateForExport, ExportColumn } from "@/lib/export";
+import { safeToLocaleDateString } from "@/lib/safe-date";
 
 export default function Reports() {
   const [filters, setFilters] = useState<any>({});
+  const [activeTab, setActiveTab] = useState("scouts");
+  const [showMasterlist, setShowMasterlist] = useState(false);
 
-  const { data: reports = [], isLoading } = useReports();
-  const createReport = useCreateReport();
   const { data: scouts = [] } = useScouts();
   const { data: schools = [] } = useSchools();
   const { data: units = [] } = useUnits();
   const { data: activities = [] } = useActivities();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [showMasterlist, setShowMasterlist] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<any>(null);
-  const [showViewReport, setShowViewReport] = useState(false);
 
-  const deleteReport = useMutation({
-    mutationFn: (id: string) => reportsService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      toast({
-        title: "Report deleted",
-        description: "Report history entry has been removed",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Delete failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Filter the report history list
-  const filteredReportHistory = useMemo(() => {
-    let result = [...reports];
-
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      result = result.filter(r => r.title.toLowerCase().includes(searchLower));
-    }
-
-    if (filters.category) { // unlikely to be set from filter panel but good to have
-      result = result.filter((r) => r.category === filters.category);
-    }
-
-    // Also filter history by generate date if needed, but filter panel doesn't support date range yet
-
-    return result;
-  }, [reports, filters]);
-
-  // Filter DATA for report generation
-  const filteredScoutsData = useMemo(() => {
+  // Filter scouts data
+  const filteredScouts = useMemo(() => {
     let result = [...scouts];
-
-    if (filters.municipality) {
-      result = result.filter(s => s.municipality === filters.municipality);
+    if (filters.municipality) result = result.filter((s) => s.municipality === filters.municipality);
+    if (filters.school) result = result.filter((s) => s.schoolId === filters.school);
+    if (filters.unitId) result = result.filter((s) => s.unitId === filters.unitId);
+    if (filters.status) result = result.filter((s) => s.status === filters.status);
+    if (filters.gender) result = result.filter((s) => s.gender === filters.gender);
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter(
+        (s) => s.name.toLowerCase().includes(q) || s.uid.toLowerCase().includes(q)
+      );
     }
-    if (filters.school) {
-      result = result.filter(s => s.schoolId === filters.school);
-    }
-    if (filters.unitId) {
-      result = result.filter(s => s.unitId === filters.unitId);
-    }
-    if (filters.status) {
-      result = result.filter(s => s.status === filters.status);
-    }
-    if (filters.gender) {
-      result = result.filter(s => s.gender === filters.gender);
-    }
-
     return result;
   }, [scouts, filters]);
 
-  const filteredSchoolsData = useMemo(() => {
+  const filteredSchools = useMemo(() => {
     let result = [...schools];
-    if (filters.municipality) {
-      result = result.filter(s => s.municipality === filters.municipality);
+    if (filters.municipality) result = result.filter((s) => s.municipality === filters.municipality);
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter((s) => s.name.toLowerCase().includes(q));
     }
     return result;
   }, [schools, filters]);
 
-  const filteredUnitsData = useMemo(() => {
+  const filteredUnits = useMemo(() => {
     let result = [...units];
-    if (filters.school) {
-      result = result.filter(u => u.schoolId === filters.school);
+    if (filters.school) result = result.filter((u) => u.schoolId === filters.school);
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter((u) => u.name.toLowerCase().includes(q));
     }
     return result;
   }, [units, filters]);
 
-
-  const generateScoutsReport = async () => {
-    try {
-      const dataToExport = filteredScoutsData;
-
-      if (dataToExport.length === 0) {
-        toast({
-          title: "No data to export",
-          description: "Current filters resulted in 0 records.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      await createReport.mutateAsync({
-        title: `Scouts Report ${filters.school ? '- School Filtered' : ''}`,
-        description: `Generated report with ${dataToExport.length} scouts. Filters: ${Object.entries(filters).filter(([k, v]) => v).map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
-        category: "enrollment",
-        recordCount: dataToExport.length,
-        generatedBy: user?.id,
-      });
-
-      const columns: ExportColumn[] = [
-        { key: "uid", label: "Scout ID" },
-        { key: "name", label: "Name" },
-        { key: "gender", label: "Gender" },
-        { key: "municipality", label: "Municipality" },
-        { key: "status", label: "Status" },
-        { key: "contactNumber", label: "Contact Number" },
-        { key: "email", label: "Email" },
-        { key: "rank", label: "Rank" },
-        { key: "membershipYears", label: "Membership Years" },
-        { key: "dateOfBirth", label: "Date of Birth", format: formatDateForExport },
-        { key: "createdAt", label: "Registered Date", format: formatDateForExport },
-      ];
-
-      exportToCSV(dataToExport, columns, generateFilename("scouts_report"));
-
-      toast({
-        title: "Report generated",
-        description: `Scouts report with ${dataToExport.length} records generated successfully`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate report",
-        variant: "destructive",
-      });
+  const filteredActivities = useMemo(() => {
+    let result = [...activities];
+    if (filters.status) result = result.filter((a) => a.status === filters.status);
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter((a) => a.title.toLowerCase().includes(q));
     }
-  };
+    return result;
+  }, [activities, filters]);
 
-  const generateSchoolsReport = async () => {
-    try {
-      const dataToExport = filteredSchoolsData;
-
-      if (dataToExport.length === 0) {
-        toast({
-          title: "No data to export",
-          description: "Current filters resulted in 0 records.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      await createReport.mutateAsync({
-        title: "Schools Report",
-        description: `List of schools. Filters: ${Object.entries(filters).filter(([k, v]) => v && k === 'municipality').map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
-        category: "enrollment",
-        recordCount: dataToExport.length,
-        generatedBy: user?.id,
-      });
-
-      const columns: ExportColumn[] = [
-        { key: "name", label: "School Name" },
-        { key: "municipality", label: "Municipality" },
-        { key: "principal", label: "Principal" },
-        { key: "createdAt", label: "Added Date", format: formatDateForExport },
-      ];
-
-      exportToCSV(dataToExport, columns, generateFilename("schools_report"));
-
-      toast({
-        title: "Report generated",
-        description: `Schools report with ${dataToExport.length} records generated successfully`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate report",
-        variant: "destructive",
-      });
+  // Export helpers
+  const exportScouts = () => {
+    if (filteredScouts.length === 0) {
+      toast({ title: "No data to export", description: "Current filters resulted in 0 records.", variant: "destructive" });
+      return;
     }
+    const columns: ExportColumn[] = [
+      { key: "uid", label: "Scout ID" },
+      { key: "name", label: "Name" },
+      { key: "gender", label: "Gender" },
+      { key: "municipality", label: "Municipality" },
+      { key: "status", label: "Status" },
+      { key: "contactNumber", label: "Contact Number" },
+      { key: "email", label: "Email" },
+      { key: "rank", label: "Rank" },
+      { key: "membershipYears", label: "Membership Years" },
+      { key: "dateOfBirth", label: "Date of Birth", format: formatDateForExport },
+      { key: "createdAt", label: "Registered Date", format: formatDateForExport },
+    ];
+    exportToCSV(filteredScouts, columns, generateFilename("scouts_report"));
+    toast({ title: "Report exported", description: `Exported ${filteredScouts.length} scouts.` });
   };
 
-  const generateUnitsReport = async () => {
-    try {
-      const dataToExport = filteredUnitsData;
-
-      if (dataToExport.length === 0) {
-        toast({
-          title: "No data to export",
-          description: "Current filters resulted in 0 records.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      await createReport.mutateAsync({
-        title: "Units Report",
-        description: `List of units. Filters: ${Object.entries(filters).filter(([k, v]) => v).map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
-        category: "enrollment",
-        recordCount: dataToExport.length,
-        generatedBy: user?.id,
-      });
-
-      const columns: ExportColumn[] = [
-        { key: "name", label: "Unit Name" },
-        { key: "leader", label: "Unit Leader" },
-        { key: "status", label: "Status" },
-        { key: "createdAt", label: "Created Date", format: formatDateForExport },
-      ];
-
-      exportToCSV(dataToExport, columns, generateFilename("units_report"));
-
-      toast({
-        title: "Report generated",
-        description: `Units report with ${dataToExport.length} records generated successfully`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate report",
-        variant: "destructive",
-      });
+  const exportSchools = () => {
+    if (filteredSchools.length === 0) {
+      toast({ title: "No data to export", description: "Current filters resulted in 0 records.", variant: "destructive" });
+      return;
     }
+    const columns: ExportColumn[] = [
+      { key: "name", label: "School Name" },
+      { key: "municipality", label: "Municipality" },
+      { key: "principal", label: "Principal" },
+      { key: "createdAt", label: "Added Date", format: formatDateForExport },
+    ];
+    exportToCSV(filteredSchools, columns, generateFilename("schools_report"));
+    toast({ title: "Report exported", description: `Exported ${filteredSchools.length} schools.` });
   };
 
-  const generateActivitiesReport = async () => {
-    try {
-      // Activities don't have many filters in panel except maybe status if we added it, but let's stick to base
-      const dataToExport = activities;
-
-      await createReport.mutateAsync({
-        title: "Activities Report",
-        description: `List of all activities as of ${new Date().toLocaleDateString()}`,
-        category: "activities",
-        recordCount: dataToExport.length,
-        generatedBy: user?.id,
-      });
-
-      const columns: ExportColumn[] = [
-        { key: "title", label: "Activity Title" },
-        { key: "date", label: "Date", format: formatDateForExport },
-        { key: "location", label: "Location" },
-        { key: "capacity", label: "Capacity" },
-        { key: "status", label: "Status" },
-        { key: "createdAt", label: "Created Date", format: formatDateForExport },
-      ];
-
-      exportToCSV(dataToExport, columns, generateFilename("activities_report"));
-
-      toast({
-        title: "Report generated",
-        description: `Activities report with ${dataToExport.length} records generated successfully`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate report",
-        variant: "destructive",
-      });
+  const exportUnits = () => {
+    if (filteredUnits.length === 0) {
+      toast({ title: "No data to export", description: "Current filters resulted in 0 records.", variant: "destructive" });
+      return;
     }
+    const columns: ExportColumn[] = [
+      { key: "name", label: "Unit Name" },
+      { key: "leader", label: "Unit Leader" },
+      { key: "status", label: "Status" },
+      { key: "createdAt", label: "Created Date", format: formatDateForExport },
+    ];
+    exportToCSV(filteredUnits, columns, generateFilename("units_report"));
+    toast({ title: "Report exported", description: `Exported ${filteredUnits.length} units.` });
   };
 
-  const generateMembershipReport = async () => {
-    try {
-      const dataToExport = filteredScoutsData;
-      const activeScouts = dataToExport.filter(s => s.status === "active");
-      const pendingScouts = dataToExport.filter(s => s.status === "pending");
-      const expiredScouts = dataToExport.filter(s => s.status === "expired");
-
-      await createReport.mutateAsync({
-        title: "Membership Report",
-        description: `Membership statistics. Filters: ${Object.entries(filters).filter(([k, v]) => v).map(([k, v]) => `${k}=${v}`).join(', ') || 'None'}`,
-        category: "membership",
-        recordCount: dataToExport.length,
-        generatedBy: user?.id,
-      });
-
-      const columns: ExportColumn[] = [
-        { key: "uid", label: "Scout ID" },
-        { key: "name", label: "Name" },
-        { key: "status", label: "Status" },
-        { key: "membershipYears", label: "Years" },
-        { key: "municipality", label: "Municipality" },
-        { key: "createdAt", label: "Joined Date", format: formatDateForExport },
-      ];
-
-      exportToCSV(dataToExport, columns, generateFilename("membership_report"));
-
-      toast({
-        title: "Report generated",
-        description: `Membership report: ${activeScouts.length} active, ${pendingScouts.length} pending, ${expiredScouts.length} expired`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate report",
-        variant: "destructive",
-      });
+  const exportActivities = () => {
+    if (filteredActivities.length === 0) {
+      toast({ title: "No data to export", description: "Current filters resulted in 0 records.", variant: "destructive" });
+      return;
     }
+    const columns: ExportColumn[] = [
+      { key: "title", label: "Activity Title" },
+      { key: "date", label: "Date", format: formatDateForExport },
+      { key: "location", label: "Location" },
+      { key: "capacity", label: "Capacity" },
+      { key: "status", label: "Status" },
+      { key: "createdAt", label: "Created Date", format: formatDateForExport },
+    ];
+    exportToCSV(filteredActivities, columns, generateFilename("activities_report"));
+    toast({ title: "Report exported", description: `Exported ${filteredActivities.length} activities.` });
   };
 
-  const handleViewReport = (reportId: string) => {
-    const report = reports.find(r => r.id === reportId);
-    if (report) {
-      setSelectedReport(report);
-      setShowViewReport(true);
+  const exportMembership = () => {
+    if (filteredScouts.length === 0) {
+      toast({ title: "No data to export", description: "Current filters resulted in 0 records.", variant: "destructive" });
+      return;
     }
+    const columns: ExportColumn[] = [
+      { key: "uid", label: "Scout ID" },
+      { key: "name", label: "Name" },
+      { key: "status", label: "Status" },
+      { key: "membershipYears", label: "Years" },
+      { key: "municipality", label: "Municipality" },
+      { key: "createdAt", label: "Joined Date", format: formatDateForExport },
+    ];
+    exportToCSV(filteredScouts, columns, generateFilename("membership_report"));
+    toast({ title: "Report exported", description: `Exported ${filteredScouts.length} membership records.` });
   };
-
-  const handleDownloadReport = (reportId: string) => {
-    // Re-download is tricky because we don't store the file content, only metadata.
-    // Ideally we'd re-generate based on the description/metadata, but for now let's just show a toast
-    // explaining this limitation, or re-run the generation if we can infer the type.
-    // For simplicity given the scope, we'll inform the user.
-    toast({
-      title: "Download info",
-      description: "This is a historical record. Please generate a new report to get the latest data.",
-    });
-  };
-
-  const handlePrintReport = (reportId: string) => {
-    toast({
-      title: "Print initiated",
-      description: "Opening print dialog...",
-    });
-    window.print();
-  };
-
-  const handleDeleteReport = (reportId: string) => {
-    if (confirm("Are you sure you want to delete this report history?")) {
-      deleteReport.mutate(reportId);
-    }
-  }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold mb-2">Reports</h1>
-          <p className="text-muted-foreground">
-            Generate and download comprehensive reports
-          </p>
+          <p className="text-muted-foreground">Browse and export comprehensive reports</p>
         </div>
       </div>
 
@@ -373,127 +184,196 @@ export default function Reports() {
         <div className="lg:col-span-3 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Generate New Report
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Generate instant reports and export to CSV format. Reports will respect the filters selected on the left.
-              </p>
-
-              <div className="bg-muted/30 p-4 rounded-md mb-4 text-sm">
-                <span className="font-semibold">Active Filters: </span>
-                {Object.keys(filters).length === 0 ? "None (All Records)" :
-                  Object.entries(filters)
-                    .filter(([_, v]) => v) // filter out empty/null values
-                    .map(([k, v]) => `${k}: ${v}`)
-                    .join(", ")
-                }
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <Button
-                  variant="outline"
-                  className="justify-start"
-                  onClick={generateScoutsReport}
-                  disabled={createReport.isPending || scouts.length === 0}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Scouts Enrollment ({filteredScoutsData.length})
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start"
-                  onClick={generateSchoolsReport}
-                  disabled={createReport.isPending || schools.length === 0}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Schools Report ({filteredSchoolsData.length})
-                </Button>
-                {filters.school && (
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => setShowMasterlist(true)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Masterlist
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  className="justify-start"
-                  onClick={generateUnitsReport}
-                  disabled={createReport.isPending || units.length === 0}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Units Report ({filteredUnitsData.length})
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start"
-                  onClick={generateActivitiesReport}
-                  disabled={createReport.isPending || activities.length === 0}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Activities Report ({activities.length})
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start md:col-span-2"
-                  onClick={generateMembershipReport}
-                  disabled={createReport.isPending || scouts.length === 0}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Membership Statistics ({filteredScoutsData.length})
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Generated Reports History
-              </CardTitle>
+              <CardTitle>Report Data</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Previously generated reports are stored here for reference
-              </p>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="flex flex-wrap">
+                  <TabsTrigger value="scouts">Scouts ({filteredScouts.length})</TabsTrigger>
+                  <TabsTrigger value="schools">Schools ({filteredSchools.length})</TabsTrigger>
+                  <TabsTrigger value="units">Units ({filteredUnits.length})</TabsTrigger>
+                  <TabsTrigger value="activities">Activities ({filteredActivities.length})</TabsTrigger>
+                  <TabsTrigger value="membership">Membership ({filteredScouts.length})</TabsTrigger>
+                </TabsList>
 
-              {isLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-pulse text-muted-foreground">Loading reports...</div>
-                </div>
-              ) : filteredReportHistory.length === 0 ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="text-sm text-muted-foreground">No reports found matching your search.</div>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {filteredReportHistory.map((report) => (
-                    <div key={report.id} className="relative group">
-                      <ReportCard
-                        report={report as any}
-                        onGenerate={handleViewReport}
-                      />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
-                        onClick={() => handleDeleteReport(report.id)}
-                        title="Delete Report History"
-                      >
-                        <Trash2 className="h-3 w-3" />
+                {/* Scouts */}
+                <TabsContent value="scouts" className="mt-4 space-y-3">
+                  <div className="flex justify-end gap-2">
+                    {filters.school && (
+                      <Button variant="outline" size="sm" onClick={() => setShowMasterlist(true)}>
+                        <Eye className="h-4 w-4 mr-2" /> View Masterlist
                       </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    )}
+                    <Button size="sm" onClick={exportScouts} disabled={filteredScouts.length === 0}>
+                      <Download className="h-4 w-4 mr-2" /> Export CSV
+                    </Button>
+                  </div>
+                  <div className="border rounded-md overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Scout ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Gender</TableHead>
+                          <TableHead>Municipality</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Rank</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredScouts.length === 0 ? (
+                          <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No scouts found.</TableCell></TableRow>
+                        ) : filteredScouts.map((s) => (
+                          <TableRow key={s.id}>
+                            <TableCell className="font-mono text-xs">{s.uid}</TableCell>
+                            <TableCell className="font-medium">{s.name}</TableCell>
+                            <TableCell>{s.gender}</TableCell>
+                            <TableCell>{s.municipality}</TableCell>
+                            <TableCell><Badge variant="outline" className="capitalize">{s.status}</Badge></TableCell>
+                            <TableCell className="capitalize">{s.rank || "-"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                {/* Schools */}
+                <TabsContent value="schools" className="mt-4 space-y-3">
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={exportSchools} disabled={filteredSchools.length === 0}>
+                      <Download className="h-4 w-4 mr-2" /> Export CSV
+                    </Button>
+                  </div>
+                  <div className="border rounded-md overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>School Name</TableHead>
+                          <TableHead>Municipality</TableHead>
+                          <TableHead>Principal</TableHead>
+                          <TableHead>Added</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredSchools.length === 0 ? (
+                          <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No schools found.</TableCell></TableRow>
+                        ) : filteredSchools.map((s) => (
+                          <TableRow key={s.id}>
+                            <TableCell className="font-medium">{s.name}</TableCell>
+                            <TableCell>{s.municipality}</TableCell>
+                            <TableCell>{s.principal || "-"}</TableCell>
+                            <TableCell>{safeToLocaleDateString((s as any).createdAt)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                {/* Units */}
+                <TabsContent value="units" className="mt-4 space-y-3">
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={exportUnits} disabled={filteredUnits.length === 0}>
+                      <Download className="h-4 w-4 mr-2" /> Export CSV
+                    </Button>
+                  </div>
+                  <div className="border rounded-md overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Unit Name</TableHead>
+                          <TableHead>Leader</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUnits.length === 0 ? (
+                          <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No units found.</TableCell></TableRow>
+                        ) : filteredUnits.map((u) => (
+                          <TableRow key={u.id}>
+                            <TableCell className="font-medium">{u.name}</TableCell>
+                            <TableCell>{u.leader}</TableCell>
+                            <TableCell><Badge variant="outline" className="capitalize">{u.status}</Badge></TableCell>
+                            <TableCell>{safeToLocaleDateString((u as any).createdAt)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                {/* Activities */}
+                <TabsContent value="activities" className="mt-4 space-y-3">
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={exportActivities} disabled={filteredActivities.length === 0}>
+                      <Download className="h-4 w-4 mr-2" /> Export CSV
+                    </Button>
+                  </div>
+                  <div className="border rounded-md overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Capacity</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredActivities.length === 0 ? (
+                          <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No activities found.</TableCell></TableRow>
+                        ) : filteredActivities.map((a) => (
+                          <TableRow key={a.id}>
+                            <TableCell className="font-medium">{a.title}</TableCell>
+                            <TableCell>{safeToLocaleDateString(a.date)}</TableCell>
+                            <TableCell>{a.location}</TableCell>
+                            <TableCell>{a.capacity}</TableCell>
+                            <TableCell><Badge variant="outline" className="capitalize">{a.status}</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                {/* Membership */}
+                <TabsContent value="membership" className="mt-4 space-y-3">
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={exportMembership} disabled={filteredScouts.length === 0}>
+                      <Download className="h-4 w-4 mr-2" /> Export CSV
+                    </Button>
+                  </div>
+                  <div className="border rounded-md overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Scout ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Years</TableHead>
+                          <TableHead>Municipality</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredScouts.length === 0 ? (
+                          <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No records found.</TableCell></TableRow>
+                        ) : filteredScouts.map((s) => (
+                          <TableRow key={s.id}>
+                            <TableCell className="font-mono text-xs">{s.uid}</TableCell>
+                            <TableCell className="font-medium">{s.name}</TableCell>
+                            <TableCell><Badge variant="outline" className="capitalize">{s.status}</Badge></TableCell>
+                            <TableCell>{s.membershipYears || 0}</TableCell>
+                            <TableCell>{s.municipality}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
@@ -503,18 +383,10 @@ export default function Reports() {
         <SchoolMasterlistModal
           open={showMasterlist}
           onOpenChange={setShowMasterlist}
-          scouts={filteredScoutsData}
-          schoolName={schools.find(s => s.id === filters.school)?.name || "School"}
+          scouts={filteredScouts}
+          schoolName={schools.find((s) => s.id === filters.school)?.name || "School"}
         />
       )}
-
-      <ViewReportDialog
-        report={selectedReport}
-        open={showViewReport}
-        onOpenChange={setShowViewReport}
-        onDownload={handleDownloadReport}
-        onPrint={handlePrintReport}
-      />
     </div>
   );
 }

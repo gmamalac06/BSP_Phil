@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Target, Eye, Users, Award, TrendingUp, Search, IdCard } from "lucide-react";
+import { Shield, Target, Eye, Users, Award, TrendingUp, Search, IdCard, BookOpen, ScrollText, Scale } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -123,19 +123,16 @@ export default function Landing() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary/10 via-background to-chart-3/10 py-20 px-4 relative">
-        {/* Scout ID Lookup - Top Right */}
-
-
         <div className="max-w-6xl mx-auto text-center">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-6 animate-fade-in-up">
             <img
               src="/bsp-logo.svg"
               alt="Boy Scouts of the Philippines"
               className="h-32 w-32"
             />
           </div>
-          <h1 className="text-5xl font-bold mb-4">ScoutSmart</h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <h1 className="text-5xl font-bold mb-4 animate-fade-in-up" style={{ animationDelay: "0.08s" }}>ScoutSmart</h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "0.16s" }}>
             BOY SCOUT OF THE PHILIPPINES MAGUINDANAO AND COTABATO CITY CHAPTER
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
@@ -146,15 +143,10 @@ export default function Landing() {
                   Go to Dashboard
                 </Button>
               ) : (
-                // Show Sign In and Register when not logged in
-                <>
-                  <Button size="lg" onClick={() => setLocation("/login")}>
-                    Sign In
-                  </Button>
-                  <Button size="lg" variant="secondary" onClick={() => setLocation("/register")}>
-                    Register
-                  </Button>
-                </>
+                // Show Sign In when not logged in (registration is admin-only)
+                <Button size="lg" onClick={() => setLocation("/login")}>
+                  Sign In
+                </Button>
               )
             )}
             <Button size="lg" variant="outline" onClick={() => {
@@ -169,44 +161,48 @@ export default function Landing() {
       {/* Event Carousel Section */}
       < EventCarouselSection />
 
-      {/* About Us Section */}
+      {/* Policy and Guidelines Section */}
       < section id="about" className="py-20 px-4 bg-background" >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">About Us</h2>
+            <h2 className="text-4xl font-bold mb-4">Policy and Guidelines</h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              ScoutSmart is a comprehensive management system designed specifically for the Boy Scouts of the Philippines.
-              We provide modern tools to streamline scout registration, activity tracking, and organizational management.
+              Our policies and guidelines ensure that ScoutSmart operates with integrity,
+              accountability, and respect for every scout, leader, and stakeholder in the
+              Boy Scouts of the Philippines community.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
+          <div className="grid md:grid-cols-3 gap-6 mt-12 stagger-children">
             <Card>
               <CardHeader>
-                <Users className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Scout Management</CardTitle>
+                <ScrollText className="h-8 w-8 text-primary mb-2" />
+                <CardTitle>Membership Policy</CardTitle>
                 <CardDescription>
-                  Efficiently manage scout registrations, profiles, and membership tracking
+                  Clear rules for scout enrollment, renewal, and active membership in good
+                  standing across all units and chapters.
                 </CardDescription>
               </CardHeader>
             </Card>
 
             <Card>
               <CardHeader>
-                <Award className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Activity Tracking</CardTitle>
+                <Scale className="h-8 w-8 text-primary mb-2" />
+                <CardTitle>Code of Conduct</CardTitle>
                 <CardDescription>
-                  Organize events, track attendance, and monitor scout participation
+                  Standards of behavior and ethics expected of scouts, leaders, and staff
+                  while participating in any BSP activity.
                 </CardDescription>
               </CardHeader>
             </Card>
 
             <Card>
               <CardHeader>
-                <TrendingUp className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Analytics & Reports</CardTitle>
+                <BookOpen className="h-8 w-8 text-primary mb-2" />
+                <CardTitle>Data Privacy Guidelines</CardTitle>
                 <CardDescription>
-                  Generate comprehensive reports and insights for better decision making
+                  How personal information is collected, used, and protected within the
+                  ScoutSmart platform in line with applicable laws.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -217,9 +213,9 @@ export default function Landing() {
       {/* Mission & Vision Section */}
       < section className="py-20 px-4 bg-muted/50" >
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12">
+          <div className="grid md:grid-cols-2 gap-12 stagger-children">
             {/* Mission */}
-            <Card className="border-2">
+            <Card className="border-2 animate-fade-in-up">
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <Target className="h-10 w-10 text-primary" />
@@ -256,7 +252,7 @@ export default function Landing() {
             </Card>
 
             {/* Vision */}
-            <Card className="border-2">
+            <Card className="border-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <Eye className="h-10 w-10 text-primary" />
@@ -296,7 +292,7 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-primary/5">
+      <section className="py-20 px-4 bg-primary/5 animate-fade-in-up">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-lg text-muted-foreground mb-8">

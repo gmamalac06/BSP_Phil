@@ -132,8 +132,8 @@ your registration soon.
                     </div>
 
                     {/* Warning */}
-                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                    <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
                             <strong>Important:</strong> Please save this ID - you'll need it to sign in to your account.
                             Your registration is pending admin approval.
                         </p>

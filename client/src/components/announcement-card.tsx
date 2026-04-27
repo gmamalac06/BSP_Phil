@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, MessageSquare, MoreVertical, Edit, Trash2 } from "lucide-react";
-import { safeFormatDistanceToNow } from "@/lib/safe-date";
+import { Calendar, MessageSquare, MoreVertical, Edit, Trash2, Clock } from "lucide-react";
+import { safeFormatDistanceToNow, safeFormat } from "@/lib/safe-date";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,6 +71,36 @@ export function AnnouncementCard({ announcement, onView, onEdit, onDelete }: Ann
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
           {announcement.content}
         </p>
+        {((announcement as any).eventDate || (announcement as any).endDate) && (
+          <div className="mb-3 text-xs text-foreground/80 space-y-1">
+            {(announcement as any).eventDate && (
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span className="font-medium">Start:</span>
+                <span>{safeFormat((announcement as any).eventDate, "PP")}</span>
+                {(announcement as any).eventTime && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {(announcement as any).eventTime}
+                  </span>
+                )}
+              </div>
+            )}
+            {(announcement as any).endDate && (
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span className="font-medium">End:</span>
+                <span>{safeFormat((announcement as any).endDate, "PP")}</span>
+                {(announcement as any).endTime && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {(announcement as any).endTime}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />

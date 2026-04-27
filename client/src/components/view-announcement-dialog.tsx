@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock } from "lucide-react";
 import { safeFormat } from "@/lib/safe-date";
 import type { Announcement } from "@shared/schema";
 
@@ -39,6 +40,36 @@ export function ViewAnnouncementDialog({
             <span>•</span>
             <span>{safeFormat((announcement as any).created_at || announcement.createdAt, "PPP")}</span>
           </div>
+          {((announcement as any).eventDate || (announcement as any).endDate) && (
+            <div className="flex flex-wrap gap-3 text-sm rounded-md border p-3 bg-muted/40">
+              {(announcement as any).eventDate && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Start:</span>
+                  <span>{safeFormat((announcement as any).eventDate, "PPP")}</span>
+                  {(announcement as any).eventTime && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {(announcement as any).eventTime}
+                    </span>
+                  )}
+                </div>
+              )}
+              {(announcement as any).endDate && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="font-medium">End:</span>
+                  <span>{safeFormat((announcement as any).endDate, "PPP")}</span>
+                  {(announcement as any).endTime && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {(announcement as any).endTime}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="prose prose-sm max-w-none">
             <p className="whitespace-pre-wrap">{announcement.content}</p>
           </div>

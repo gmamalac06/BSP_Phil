@@ -19,6 +19,8 @@ interface AnnouncementFormDialogProps {
     author: string;
     eventDate?: string;
     eventTime?: string;
+    endDate?: string;
+    endTime?: string;
     photo?: File | string | null;
   }) => void;
   announcement?: Announcement | null;
@@ -39,6 +41,8 @@ export function AnnouncementFormDialog({
     author: "",
     eventDate: "",
     eventTime: "",
+    endDate: "",
+    endTime: "",
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -51,8 +55,10 @@ export function AnnouncementFormDialog({
         content: announcement.content,
         type: announcement.type,
         author: announcement.author,
-        eventDate: (announcement as any).eventDate ? (announcement as any).eventDate.split('T')[0] : "",
+        eventDate: (announcement as any).eventDate ? String((announcement as any).eventDate).split('T')[0] : "",
         eventTime: (announcement as any).eventTime || "",
+        endDate: (announcement as any).endDate ? String((announcement as any).endDate).split('T')[0] : "",
+        endTime: (announcement as any).endTime || "",
       });
       if ((announcement as any).photo) {
         setPhotoPreview((announcement as any).photo);
@@ -68,6 +74,8 @@ export function AnnouncementFormDialog({
         author: "",
         eventDate: "",
         eventTime: "",
+        endDate: "",
+        endTime: "",
       });
       setPhotoFile(null);
       setPhotoPreview(null);
@@ -104,11 +112,11 @@ export function AnnouncementFormDialog({
       ...formData,
       eventDate: formData.eventDate || undefined,
       eventTime: formData.eventTime || undefined,
+      endDate: formData.endDate || undefined,
+      endTime: formData.endTime || undefined,
       photo: photoFile || (photoPreview && !photoFile ? photoPreview : null),
     });
   };
-
-  const showEventFields = formData.type === "event";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -171,13 +179,14 @@ export function AnnouncementFormDialog({
               </div>
             </div>
 
-            {/* Event Date/Time Fields - shown when type is 'event' */}
-            {showEventFields && (
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+            {/* Optional Schedule Fields - shown for all announcement types */}
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm font-medium">Schedule (optional)</div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="eventDate" className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Event Date
+                    Start Date
                   </Label>
                   <Input
                     id="eventDate"
@@ -189,7 +198,7 @@ export function AnnouncementFormDialog({
                 <div className="space-y-2">
                   <Label htmlFor="eventTime" className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Event Time
+                    Start Time
                   </Label>
                   <Input
                     id="eventTime"
@@ -198,8 +207,32 @@ export function AnnouncementFormDialog({
                     onChange={(e) => setFormData({ ...formData, eventTime: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    End Date
+                  </Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endTime" className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    End Time
+                  </Label>
+                  <Input
+                    id="endTime"
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  />
+                </div>
               </div>
-            )}
+            </div>
 
             {/* Photo Upload */}
             <div className="space-y-2">

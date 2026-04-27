@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -9,7 +9,8 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading, user } = useAuth();
+  const [location] = useLocation();
 
   if (loading) {
     return (
@@ -21,6 +22,11 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
 
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
+  }
+
+  // Block users who are not approved (admins are always allowed through)
+  if (!isAdmin && user && !user.isApproved && location !== "/pending-approval") {
+    return <Redirect to="/pending-approval" />;
   }
 
   if (requireAdmin && !isAdmin) {

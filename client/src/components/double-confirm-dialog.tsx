@@ -67,7 +67,7 @@ export function DoubleConfirmDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
-            <AlertTriangle className={`h-6 w-6 ${step === 2 ? "text-destructive animate-pulse" : "text-amber-500"}`} />
+            <AlertTriangle className={`h-6 w-6 ${step === 2 ? "text-destructive animate-pulse" : "text-yellow-600"}`} />
             <AlertDialogTitle>
               {step === 1 ? title : "Final Confirmation Required"}
             </AlertDialogTitle>
@@ -104,7 +104,7 @@ export function DoubleConfirmDialog({
           {step === 1 ? (
             <Button
               onClick={handleFirstConfirm}
-              className="bg-amber-500 hover:bg-amber-600 text-white"
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"
             >
               Continue
             </Button>

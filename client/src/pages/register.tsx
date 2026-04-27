@@ -27,7 +27,7 @@ const roleConfig = {
         icon: UserCheck,
         title: "Staff Member",
         description: "Register as a staff member to help manage scouts and activities",
-        color: "bg-blue-500",
+        color: "bg-green-600",
         requiresApproval: true,
         affiliationType: "school" as const,
     },
@@ -43,7 +43,7 @@ const roleConfig = {
         icon: User,
         title: "Scout Member",
         description: "Register as a scout to join activities and track your progress",
-        color: "bg-amber-500",
+        color: "bg-green-400",
         requiresApproval: true,
         affiliationType: "both" as const,
     },
@@ -418,7 +418,7 @@ export default function Register() {
                                                 <h3 className="font-semibold mb-1 group-hover:text-primary">{config.title}</h3>
                                                 <p className="text-sm text-muted-foreground">{config.description}</p>
                                                 {config.requiresApproval && (
-                                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                                                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
                                                         Requires admin approval
                                                     </p>
                                                 )}
@@ -451,10 +451,10 @@ export default function Register() {
                                 </div>
 
                                 {/* Pending Approval Warning */}
-                                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                                <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                                     <div className="flex gap-2">
-                                        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                                        <div className="text-sm text-amber-800 dark:text-amber-200">
+                                        <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                                        <div className="text-sm text-yellow-800 dark:text-yellow-200">
                                             <p className="font-medium">Admin Approval Required</p>
                                             <p className="mt-1">
                                                 Your registration will be pending until an administrator approves your account.
@@ -678,8 +678,8 @@ export default function Register() {
                                     <span className="text-sm">Registering as <strong>Scout Member</strong></span>
                                 </div>
 
-                                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
-                                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                                <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
                                         <strong>Note:</strong> Your registration will be in <strong>pending</strong> status until approved by an administrator.
                                     </p>
                                 </div>

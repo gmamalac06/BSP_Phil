@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSchools } from "@/hooks/useSchools";
 import { useUnits } from "@/hooks/useUnits";
 import type { Scout } from "@shared/schema";
+import { generateScoutUid } from "@/lib/scout-id";
 
 interface ScoutFormDialogProps {
   open: boolean;
@@ -75,12 +76,10 @@ export function ScoutFormDialog({
         status: scout.status,
       });
     } else {
-      // Generate UID for new scout
-      const year = new Date().getFullYear();
-      const random = Math.random().toString().slice(2, 8);
+      // Generate UID for new scout (will be regenerated on submit using DOB)
       setFormData({
         name: "",
-        uid: `BSP-${year}-${random}`,
+        uid: generateScoutUid(),
         gender: "",
         municipality: "",
         dateOfBirth: "",
@@ -100,8 +99,14 @@ export function ScoutFormDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // For new scouts, regenerate UID at submit time so it includes the
+    // entered birth day + birth year (last 6 digits encode DDYYYY).
+    const finalUid = scout
+      ? formData.uid
+      : generateScoutUid(formData.dateOfBirth || undefined);
     onSubmit({
       ...formData,
+      uid: finalUid,
       unitId: formData.unitId === "none" ? null : formData.unitId,
       schoolId: formData.schoolId === "none" ? null : formData.schoolId,
       address: formData.address || null,

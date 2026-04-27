@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 import type { Unit } from "@shared/schema";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -26,6 +27,19 @@ export default function Units() {
   const updateUnit = useUpdateUnit();
   const deleteUnit = useDeleteUnit();
   const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
+
+  // Role scoping: staff sees only their school's units, unit leaders see only their unit
+  const scopedUnits = useMemo(() => {
+    if (isAdmin) return units;
+    if (user?.role === "staff" && user.schoolId) {
+      return units.filter((u) => u.schoolId === user.schoolId);
+    }
+    if (user?.role === "unit_leader" && user.unitId) {
+      return units.filter((u) => u.id === user.unitId);
+    }
+    return units;
+  }, [units, isAdmin, user]);
 
   // Reset visible count when search changes - moved from useMemo to useEffect
   useEffect(() => {
@@ -33,15 +47,15 @@ export default function Units() {
   }, [searchQuery]);
 
   const filteredUnits = useMemo(() => {
-    if (!searchQuery) return units;
+    if (!searchQuery) return scopedUnits;
 
     const query = searchQuery.toLowerCase();
-    return units.filter(
+    return scopedUnits.filter(
       (unit) =>
         unit.name.toLowerCase().includes(query) ||
         unit.leader?.toLowerCase().includes(query)
     );
-  }, [units, searchQuery]);
+  }, [scopedUnits, searchQuery]);
 
   const visibleUnits = useMemo(() => {
     return filteredUnits.slice(0, visibleCount);

@@ -100,16 +100,6 @@ export default function Login() {
             </Button>
             <div className="text-center text-sm text-muted-foreground space-y-2">
               <div>
-                Don't have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => setLocation("/register")}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Create one
-                </button>
-              </div>
-              <div>
                 <button
                   type="button"
                   onClick={() => setLocation("/")}

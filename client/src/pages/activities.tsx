@@ -34,12 +34,12 @@ export default function Activities() {
   const { toast } = useToast();
 
   const categorizedActivities = useMemo(() => {
-    const now = new Date();
-
+    // Categorize strictly by status so every activity appears in exactly one tab
+    // and completed activities are always listed.
     return {
-      upcoming: activities.filter((a) => new Date(a.date) > now && a.status !== "completed"),
+      upcoming: activities.filter((a) => a.status !== "completed" && a.status !== "ongoing"),
       ongoing: activities.filter((a) => a.status === "ongoing"),
-      completed: activities.filter((a) => a.status === "completed" || new Date(a.date) < now),
+      completed: activities.filter((a) => a.status === "completed"),
     };
   }, [activities]);
 

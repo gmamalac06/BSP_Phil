@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import type { Scout } from "@shared/schema";
+import { getCurrentValidityYear } from "./scout-id";
 
 export interface IDCardData {
   scout: Scout;
@@ -25,11 +26,11 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   });
 
   // Set background color
-  pdf.setFillColor(240, 248, 255); // Light blue background
+  pdf.setFillColor(240, 253, 244); // Light green background
   pdf.rect(0, 0, 85.6, 53.98, "F");
 
   // Header bar
-  pdf.setFillColor(25, 118, 210); // Blue header
+  pdf.setFillColor(21, 128, 61); // BSP Green header
   pdf.rect(0, 0, 85.6, 8, "F");
 
   pdf.setTextColor(255, 255, 255);
@@ -147,8 +148,14 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   pdf.setTextColor(100, 100, 100);
   pdf.text("This card is valid and must be presented when required", 3, 51);
 
+  // Validity year (bottom right)
+  pdf.setFontSize(5);
+  pdf.setTextColor(21, 128, 61);
+  pdf.setFont("helvetica", "bold");
+  pdf.text(`Valid ${getCurrentValidityYear()}`, 82.5, 51, { align: "right" });
+
   // Border
-  pdf.setDrawColor(25, 118, 210);
+  pdf.setDrawColor(21, 128, 61);
   pdf.setLineWidth(0.5);
   pdf.rect(0.5, 0.5, 84.6, 52.98);
 
@@ -156,11 +163,11 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   pdf.addPage();
 
   // Set background color
-  pdf.setFillColor(240, 248, 255); // Light blue background
+  pdf.setFillColor(240, 253, 244); // Light green background
   pdf.rect(0, 0, 85.6, 53.98, "F");
 
   // Header bar
-  pdf.setFillColor(25, 118, 210); // Blue header
+  pdf.setFillColor(21, 128, 61); // BSP Green header
   pdf.rect(0, 0, 85.6, 8, "F");
 
   pdf.setTextColor(255, 255, 255);
@@ -214,7 +221,7 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
 
   // Vision
   pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(25, 118, 210);
+  pdf.setTextColor(21, 128, 61);
   pdf.text("BSP Vision:", 3, mvY);
   pdf.setFont("helvetica", "italic");
   pdf.setTextColor(80, 80, 80);
@@ -225,16 +232,13 @@ export async function generateScoutIDCard(data: IDCardData): Promise<void> {
   // Mission
   const missionY = mvY + (splitVision.length * 2.5) + 2;
   pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(25, 118, 210);
+  pdf.setTextColor(21, 128, 61);
   pdf.text("BSP Mission:", 3, missionY);
   pdf.setFont("helvetica", "italic");
   pdf.setTextColor(80, 80, 80);
-  const missionText = "To help young people develop character, citizenship, and physical and mental fitness through challenging programs in a caring, nurturing environment.";
-  const splitMission = pdf.splitTextToSize(missionText, 78);
-  pdf.text(splitMission, 17, missionY);
 
   // Border (Back)
-  pdf.setDrawColor(25, 118, 210);
+  pdf.setDrawColor(21, 128, 61);
   pdf.setLineWidth(0.5);
   pdf.rect(0.5, 0.5, 84.6, 52.98);
 
@@ -291,11 +295,11 @@ async function addIDCardToPage(
   const { scout, schoolName, unitName } = data;
 
   // Background
-  pdf.setFillColor(240, 248, 255);
+  pdf.setFillColor(240, 253, 244);
   pdf.rect(x, y, 85.6, 53.98, "F");
 
   // Header
-  pdf.setFillColor(25, 118, 210);
+  pdf.setFillColor(21, 128, 61);
   pdf.rect(x, y, 85.6, 10, "F");
 
   pdf.setTextColor(255, 255, 255);
@@ -376,7 +380,7 @@ async function addIDCardToPage(
   pdf.text("This card is valid and must be presented when required", x + 42.8, y + 50, { align: "center" });
 
   // Border
-  pdf.setDrawColor(25, 118, 210);
+  pdf.setDrawColor(21, 128, 61);
   pdf.setLineWidth(0.5);
   pdf.rect(x + 0.5, y + 0.5, 84.6, 52.98);
 }

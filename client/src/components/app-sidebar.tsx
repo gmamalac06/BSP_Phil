@@ -91,12 +91,6 @@ const managementItems = [
     roles: ["admin", "staff"],
   },
   {
-    title: "Unit Leaders",
-    url: "/unit-leaders",
-    icon: Users,
-    roles: ["admin"],
-  },
-  {
     title: "Staff Members",
     url: "/staff-members",
     icon: UserCog,

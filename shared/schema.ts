@@ -167,6 +167,8 @@ export const selectAnnouncementSchema = z.object({
   author: z.string(),
   eventDate: nullableDate,
   eventTime: nullableString,
+  endDate: nullableDate,
+  endTime: nullableString,
   photo: nullableString,
   smsNotified: z.boolean().default(false),
   createdAt: z.string().or(z.date()).optional(),
