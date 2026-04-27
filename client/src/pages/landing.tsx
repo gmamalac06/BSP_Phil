@@ -122,8 +122,15 @@ export default function Landing() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/10 via-background to-chart-3/10 py-20 px-4 relative">
-        <div className="max-w-6xl mx-auto text-center">
+      <section
+        className="py-20 px-4 relative overflow-hidden"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/500377219_1124332673070265_4912101231282117709_n.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="max-w-6xl mx-auto text-center relative z-10">
           <div className="flex justify-center mb-6 animate-fade-in-up">
             <img
               src="/bsp-logo.svg"
@@ -131,8 +138,8 @@ export default function Landing() {
               className="h-32 w-32"
             />
           </div>
-          <h1 className="text-5xl font-bold mb-4 animate-fade-in-up" style={{ animationDelay: "0.08s" }}>ScoutSmart</h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "0.16s" }}>
+          <h1 className="text-5xl font-bold mb-4 text-white animate-fade-in-up" style={{ animationDelay: "0.08s" }}>ScoutSmart</h1>
+          <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: "0.16s" }}>
             BOY SCOUT OF THE PHILIPPINES MAGUINDANAO AND COTABATO CITY CHAPTER
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
@@ -158,150 +165,161 @@ export default function Landing() {
         </div>
       </section >
 
-      {/* Event Carousel Section */}
-      < EventCarouselSection />
+      {/* Events, Policy, Mission/Vision, CTA — shared fixed parallax background */}
+      <div
+        className="relative"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('/Image_3a84o33a84o33a84.png')`,
+          backgroundAttachment: 'fixed',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Event Carousel Section */}
+        <EventCarouselSection />
 
-      {/* Policy and Guidelines Section */}
-      < section id="about" className="py-20 px-4 bg-background" >
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Policy and Guidelines</h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Our policies and guidelines ensure that ScoutSmart operates with integrity,
-              accountability, and respect for every scout, leader, and stakeholder in the
-              Boy Scouts of the Philippines community.
+        {/* Policy and Guidelines Section */}
+        <section id="about" className="py-20 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4 text-white">Policy and Guidelines</h2>
+              <p className="text-lg text-white/70 max-w-3xl mx-auto">
+                Our policies and guidelines ensure that ScoutSmart operates with integrity,
+                accountability, and respect for every scout, leader, and stakeholder in the
+                Boy Scouts of the Philippines community.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 mt-12 stagger-children">
+              <Card>
+                <CardHeader>
+                  <ScrollText className="h-8 w-8 text-primary mb-2" />
+                  <CardTitle>Membership Policy</CardTitle>
+                  <CardDescription>
+                    Clear rules for scout enrollment, renewal, and active membership in good
+                    standing across all units and chapters.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <Scale className="h-8 w-8 text-primary mb-2" />
+                  <CardTitle>Code of Conduct</CardTitle>
+                  <CardDescription>
+                    Standards of behavior and ethics expected of scouts, leaders, and staff
+                    while participating in any BSP activity.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <BookOpen className="h-8 w-8 text-primary mb-2" />
+                  <CardTitle>Data Privacy Guidelines</CardTitle>
+                  <CardDescription>
+                    How personal information is collected, used, and protected within the
+                    ScoutSmart platform in line with applicable laws.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Mission & Vision Section */}
+        <section className="py-20 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 stagger-children">
+              {/* Mission */}
+              <Card className="border-2 animate-fade-in-up">
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Target className="h-10 w-10 text-primary" />
+                    <CardTitle className="text-3xl">Our Mission</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    To provide the Boy Scouts of the Philippines with an innovative, user-friendly platform
+                    that simplifies administrative tasks, enhances communication, and enables leaders to focus
+                    on what matters most—developing the character and skills of young scouts.
+                  </p>
+                  <ul className="mt-6 space-y-3">
+                    <li className="flex items-start gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-muted-foreground">Streamline scout registration and management</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-muted-foreground">Improve communication between scouts, leaders, and parents</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-muted-foreground">Enable data-driven decision making through analytics</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Vision */}
+              <Card className="border-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Eye className="h-10 w-10 text-primary" />
+                    <CardTitle className="text-3xl">Our Vision</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    To become the leading management platform for scouting organizations across the Philippines,
+                    fostering a digitally-empowered scouting movement that efficiently serves its members while
+                    preserving the timeless values and traditions of scouting.
+                  </p>
+                  <ul className="mt-6 space-y-3">
+                    <li className="flex items-start gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-muted-foreground">Nationwide adoption across all BSP councils</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-muted-foreground">Continuous innovation in scout management technology</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <span className="text-muted-foreground">Support the growth and development of Filipino youth</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 px-4 animate-fade-in-up">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl font-bold mb-4 text-white">Ready to Get Started?</h2>
+            <p className="text-lg text-white/70 mb-8">
+              Join us in modernizing scout management for the digital age
             </p>
+            <div className="flex gap-4 justify-center flex-wrap">
+            </div>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6 mt-12 stagger-children">
-            <Card>
-              <CardHeader>
-                <ScrollText className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Membership Policy</CardTitle>
-                <CardDescription>
-                  Clear rules for scout enrollment, renewal, and active membership in good
-                  standing across all units and chapters.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Scale className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Code of Conduct</CardTitle>
-                <CardDescription>
-                  Standards of behavior and ethics expected of scouts, leaders, and staff
-                  while participating in any BSP activity.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <BookOpen className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Data Privacy Guidelines</CardTitle>
-                <CardDescription>
-                  How personal information is collected, used, and protected within the
-                  ScoutSmart platform in line with applicable laws.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section >
-
-      {/* Mission & Vision Section */}
-      < section className="py-20 px-4 bg-muted/50" >
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 stagger-children">
-            {/* Mission */}
-            <Card className="border-2 animate-fade-in-up">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <Target className="h-10 w-10 text-primary" />
-                  <CardTitle className="text-3xl">Our Mission</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  To provide the Boy Scouts of the Philippines with an innovative, user-friendly platform
-                  that simplifies administrative tasks, enhances communication, and enables leaders to focus
-                  on what matters most—developing the character and skills of young scouts.
-                </p>
-                <ul className="mt-6 space-y-3">
-                  <li className="flex items-start gap-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
-                    <span className="text-muted-foreground">Streamline scout registration and management</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
-                    <span className="text-muted-foreground">Improve communication between scouts, leaders, and parents</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
-                    <span className="text-muted-foreground">Enable data-driven decision making through analytics</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Vision */}
-            <Card className="border-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <Eye className="h-10 w-10 text-primary" />
-                  <CardTitle className="text-3xl">Our Vision</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  To become the leading management platform for scouting organizations across the Philippines,
-                  fostering a digitally-empowered scouting movement that efficiently serves its members while
-                  preserving the timeless values and traditions of scouting.
-                </p>
-                <ul className="mt-6 space-y-3">
-                  <li className="flex items-start gap-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
-                    <span className="text-muted-foreground">Nationwide adoption across all BSP councils</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
-                    <span className="text-muted-foreground">Continuous innovation in scout management technology</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
-                    <span className="text-muted-foreground">Support the growth and development of Filipino youth</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-primary/5 animate-fade-in-up">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Join us in modernizing scout management for the digital age
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* Footer */}
       <footer className="py-8 px-4 bg-background border-t">
