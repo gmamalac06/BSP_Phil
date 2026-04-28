@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { logAudit } from "@/lib/audit";
 import { Shield } from "lucide-react";
 
 export default function Login() {
@@ -28,6 +29,13 @@ export default function Login() {
       });
 
       if (error) throw error;
+
+      logAudit({
+        action: "User signed in",
+        details: `Login: ${formData.email}`,
+        category: "login",
+        userId: data.user?.id ?? null,
+      });
 
       toast({
         title: "Success",

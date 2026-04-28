@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { scoutsService } from "@/lib/supabase-db";
+import { logAudit } from "@/lib/audit";
 import { Shield, Users, UserCheck, User, Search, ChevronLeft, ChevronRight, School, AlertTriangle, FileText, Check, ChevronsUpDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -292,7 +293,12 @@ export default function Register() {
                     membershipYears: 0,
                 };
                 // Use Supabase directly for scout registration
-                await scoutsService.create(scoutRecord as any);
+                const created = await scoutsService.create(scoutRecord as any);
+                logAudit({
+                    action: "Scout self-registered",
+                    details: `Scout '${scoutData.name}' registered via public form (uid: ${scoutUid})`,
+                    category: "create",
+                });
 
                 // TODO: Send email with BSP ID to scout  
                 // This will be implemented later
@@ -350,6 +356,11 @@ export default function Register() {
             if (userError) {
                 console.error("Error creating user record:", userError);
             }
+            logAudit({
+                action: "User registered",
+                details: `${selectedRole} '${formData.email}' registered (auth id: ${authData.user.id})`,
+                category: "create",
+            });
             toast({
                 title: "Registration Successful!",
                 description: "Your account is pending approval by an administrator. Please check your email to verify your account.",

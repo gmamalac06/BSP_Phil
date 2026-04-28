@@ -512,25 +512,45 @@ export const announcementsService = {
 };
 
 // ============== AUDIT LOGS ==============
+function auditRowToCamel(row: any): AuditLog {
+    return {
+        id: row.id,
+        userId: row.user_id ?? null,
+        action: row.action,
+        details: row.details,
+        category: row.category,
+        ipAddress: row.ip_address ?? null,
+        createdAt: row.created_at,
+    } as AuditLog;
+}
+
 export const auditService = {
     async getAll(): Promise<AuditLog[]> {
         const { data, error } = await supabase
             .from("audit_logs")
             .select("*")
             .order("created_at", { ascending: false })
-            .limit(100);
+            .limit(500);
         if (error) throw new Error(error.message);
-        return data || [];
+        return (data || []).map(auditRowToCamel);
     },
 
     async create(log: InsertAuditLog): Promise<AuditLog> {
+        // Accept either snake_case or camelCase input.
+        const row: Record<string, any> = {
+            user_id: (log as any).user_id ?? log.userId ?? null,
+            action: log.action,
+            details: log.details,
+            category: log.category,
+            ip_address: (log as any).ip_address ?? log.ipAddress ?? null,
+        };
         const { data, error } = await supabase
             .from("audit_logs")
-            .insert(log)
+            .insert(row)
             .select()
             .single();
         if (error) throw new Error(error.message);
-        return data;
+        return auditRowToCamel(data);
     },
 
     async getByUser(userId: string): Promise<AuditLog[]> {
@@ -540,7 +560,7 @@ export const auditService = {
             .eq("user_id", userId)
             .order("created_at", { ascending: false });
         if (error) throw new Error(error.message);
-        return data || [];
+        return (data || []).map(auditRowToCamel);
     },
 
     async getByCategory(category: string): Promise<AuditLog[]> {
@@ -550,7 +570,7 @@ export const auditService = {
             .eq("category", category)
             .order("created_at", { ascending: false });
         if (error) throw new Error(error.message);
-        return data || [];
+        return (data || []).map(auditRowToCamel);
     },
 };
 

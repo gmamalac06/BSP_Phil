@@ -16,6 +16,7 @@ import type { User, School, Unit } from "@shared/schema";
 import { usersService, schoolsService, unitsService } from "@/lib/supabase-db";
 import { safeToLocaleDateString } from "@/lib/safe-date";
 import { supabase } from "@/lib/supabase";
+import { logAudit } from "@/lib/audit";
 
 export default function UserApprovals() {
     const { toast } = useToast();
@@ -51,8 +52,13 @@ export default function UserApprovals() {
 
     const approveMutation = useMutation({
         mutationFn: (userId: string) => usersService.approve(userId),
-        onSuccess: () => {
+        onSuccess: (_data, userId) => {
             queryClient.invalidateQueries({ queryKey: ["users", "pending"] });
+            logAudit({
+                action: "User approved",
+                details: `Approved user ${userId}`,
+                category: "update",
+            });
             toast({
                 title: "User Approved",
                 description: "The user account has been approved and can now access the system.",
@@ -74,8 +80,13 @@ export default function UserApprovals() {
             if (error) throw new Error(error.message);
             // Note: Auth user cleanup would typically need admin API or edge function
         },
-        onSuccess: () => {
+        onSuccess: (_data, userId) => {
             queryClient.invalidateQueries({ queryKey: ["users", "pending"] });
+            logAudit({
+                action: "User rejected",
+                details: `Rejected & deleted pending user ${userId}`,
+                category: "delete",
+            });
             toast({
                 title: "User Rejected",
                 description: "The user registration has been rejected.",

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import type { InsertScout, Scout, Unit, School } from "@shared/schema";
 import { scoutsService } from "@/lib/supabase-db";
 import { useAuth } from "./useAuth";
+import { logAudit } from "@/lib/audit";
 
 export type ScoutWithRelations = Scout & {
   unit: Unit | null;
@@ -89,9 +90,14 @@ export function useCreateScout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: InsertScout) => scoutsService.create(data),
-    onSuccess: () => {
+    onSuccess: (created: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ["scouts"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      logAudit({
+        action: "Scout created",
+        details: `Created scout '${(created as any)?.name ?? variables.name}' (uid: ${(created as any)?.uid ?? "?"})`,
+        category: "create",
+      });
     },
   });
 }
@@ -101,9 +107,15 @@ export function useUpdateScout() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertScout> }) =>
       scoutsService.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["scouts"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      const changedKeys = Object.keys(variables.data || {}).join(", ") || "(no fields)";
+      logAudit({
+        action: "Scout updated",
+        details: `Updated scout ${variables.id} — fields: ${changedKeys}`,
+        category: "update",
+      });
     },
   });
 }
@@ -112,9 +124,14 @@ export function useDeleteScout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => scoutsService.delete(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ["scouts"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      logAudit({
+        action: "Scout deleted",
+        details: `Deleted scout ${id}`,
+        category: "delete",
+      });
     },
   });
 }

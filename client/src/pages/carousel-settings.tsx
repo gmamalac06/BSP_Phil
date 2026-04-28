@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { validateFile } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
 import { carouselService } from "@/lib/supabase-db";
+import { logAudit } from "@/lib/audit";
 import { useLocation } from "wouter";
 import type { CarouselSlide } from "@shared/schema";
 
@@ -72,8 +73,13 @@ export default function CarouselSettings() {
                 is_active: formData.isActive,
             } as any);
         },
-        onSuccess: () => {
+        onSuccess: (created: any) => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
+            logAudit({
+                action: "Carousel slide created",
+                details: `Created carousel slide '${(created as any)?.title ?? formData.title}'`,
+                category: "create",
+            });
             resetForm();
             toast({ title: "Success", description: "Slide created successfully" });
         },
@@ -99,8 +105,13 @@ export default function CarouselSettings() {
                 is_active: formData.isActive,
             } as any);
         },
-        onSuccess: () => {
+        onSuccess: (_data, id) => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
+            logAudit({
+                action: "Carousel slide updated",
+                details: `Updated carousel slide ${id}`,
+                category: "update",
+            });
             resetForm();
             toast({ title: "Success", description: "Slide updated successfully" });
         },
@@ -112,8 +123,13 @@ export default function CarouselSettings() {
     // Delete slide mutation
     const deleteSlide = useMutation({
         mutationFn: (id: string) => carouselService.delete(id),
-        onSuccess: () => {
+        onSuccess: (_data, id) => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
+            logAudit({
+                action: "Carousel slide deleted",
+                details: `Deleted carousel slide ${id}`,
+                category: "delete",
+            });
             toast({ title: "Success", description: "Slide deleted successfully" });
         },
         onError: (error: Error) => {
@@ -137,8 +153,13 @@ export default function CarouselSettings() {
             await carouselService.update(currentSlide.id, { display_order: targetSlide.display_order } as any);
             await carouselService.update(targetSlide.id, { display_order: currentSlide.display_order } as any);
         },
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ["carousel-slides"] });
+            logAudit({
+                action: "Carousel slide reordered",
+                details: `Reordered carousel slide ${variables.id} ${variables.direction}`,
+                category: "update",
+            });
         },
     });
 

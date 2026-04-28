@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Report, InsertReport } from "@shared/schema";
 import { reportsService } from "@/lib/supabase-db";
+import { logAudit } from "@/lib/audit";
 
 export function useReports(category?: string) {
   return useQuery({
@@ -26,8 +27,13 @@ export function useCreateReport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: InsertReport) => reportsService.create(data),
-    onSuccess: () => {
+    onSuccess: (created: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
+      logAudit({
+        action: "Report generated",
+        details: `Generated report '${(created as any)?.title ?? variables.title}' (category: ${variables.category})`,
+        category: "create",
+      });
     },
   });
 }

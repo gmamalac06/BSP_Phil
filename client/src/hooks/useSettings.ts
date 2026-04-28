@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Settings } from "@shared/schema";
 import { settingsService } from "@/lib/supabase-db";
 import { supabase } from "@/lib/supabase";
+import { logAudit } from "@/lib/audit";
 
 export function useSettings() {
   return useQuery({
@@ -29,8 +30,13 @@ export function useUpdateSetting() {
       if (!existing) throw new Error("Setting not found");
       return settingsService.update(existing.id, value);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
+      logAudit({
+        action: "Setting updated",
+        details: `Updated setting '${variables.key}' = '${variables.value}'`,
+        category: "update",
+      });
     },
   });
 }

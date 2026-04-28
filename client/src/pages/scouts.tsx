@@ -15,6 +15,7 @@ import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Scout } from "@shared/schema";
 import { scoutsService } from "@/lib/supabase-db";
+import { logAudit } from "@/lib/audit";
 
 export default function Scouts() {
   const [activeTab, setActiveTab] = useState("all");
@@ -71,8 +72,13 @@ export default function Scouts() {
   // Scout approval mutation
   const approveScout = useMutation({
     mutationFn: (scoutId: string) => scoutsService.update(scoutId, { status: "active" }),
-    onSuccess: () => {
+    onSuccess: (_data, scoutId) => {
       queryClient.invalidateQueries({ queryKey: ["scouts"] });
+      logAudit({
+        action: "Scout approved",
+        details: `Approved scout ${scoutId} (status -> active)`,
+        category: "update",
+      });
       toast({
         title: "Scout Approved",
         description: "Scout has been activated successfully.",
