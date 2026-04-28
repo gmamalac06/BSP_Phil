@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadPaymentProof, uploadProfilePhoto } from "@/lib/storage";
+import { generateScoutUid } from "@/lib/scout-id";
 
 export default function Registration() {
   const [, setLocation] = useLocation();
@@ -60,7 +61,7 @@ export default function Registration() {
 
       const scoutData = {
         name: data.fullName.trim(),
-        uid: `BSP-${new Date().getFullYear()}-${Math.random().toString().slice(2, 8)}`,
+        uid: generateScoutUid(data.birthDate || null),
         unitId: data.unit || null,
         schoolId: data.school || null,
         municipality: data.municipality,

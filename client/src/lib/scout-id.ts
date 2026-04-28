@@ -1,11 +1,13 @@
 // Helpers for Scout ID generation and membership validity periods.
 //
 // Scout UID format:
-//   BSP-{registrationYear}-{2randomDigits}{birthMM}{birthDD}{birthYYYY}
+//   BSP-{registrationYear}-{birthMM}{birthDD}{birthYY}-{2 random digits}
 // Example:
-//   Birthday: 1995-04-24 -> BSP-2026-87 04 24 1995  -> BSP-2026-8704241995
-//   Last 8 digits encode the scout's birth month (MM), day (DD), and year (YYYY).
-// Falls back to all-random suffix if no birth date is provided.
+//   Birthday: 1995-04-24 -> BSP-2026-042495-87
+// The first 6 digits of the trailing block encode the scout's birth date
+// (MMDDYY). The trailing 2-digit random suffix prevents UID collisions for
+// scouts sharing the same birthday.
+// Falls back to a single 8-digit random block if no birth date is provided.
 
 function pad2(n: number): string {
   return n.toString().padStart(2, "0");
@@ -20,8 +22,7 @@ function randomDigits(length: number): string {
 }
 
 /**
- * Generate a Scout UID whose final 8 digits encode birth month (2) + day (2) + year (4).
- * A 2-digit random prefix preserves uniqueness for scouts sharing the same birthday.
+ * Generate a Scout UID whose final 6 digits encode birth month (2) + day (2) + 2-digit year (2).
  */
 export function generateScoutUid(dateOfBirth?: string | Date | null): string {
   const regYear = new Date().getFullYear();
@@ -32,13 +33,13 @@ export function generateScoutUid(dateOfBirth?: string | Date | null): string {
     if (!isNaN(dob.getTime())) {
       const mm = pad2(dob.getMonth() + 1);
       const dd = pad2(dob.getDate());
-      const yyyy = dob.getFullYear().toString();
-      return `BSP-${regYear}-${rand}${mm}${dd}${yyyy}`;
+      const yy = pad2(dob.getFullYear() % 100);
+      return `BSP-${regYear}-${mm}${dd}${yy}-${rand}`;
     }
   }
 
-  // Fallback: 10 random digits when birthdate is unavailable.
-  return `BSP-${regYear}-${randomDigits(10)}`;
+  // Fallback: 8 random digits when birthdate is unavailable.
+  return `BSP-${regYear}-${randomDigits(8)}`;
 }
 
 /**

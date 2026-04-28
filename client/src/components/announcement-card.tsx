@@ -72,7 +72,7 @@ export function AnnouncementCard({ announcement, onView, onEdit, onDelete }: Ann
           {announcement.content}
         </p>
         {((announcement as any).eventDate || (announcement as any).endDate) && (
-          <div className="mb-3 text-xs text-foreground/80 space-y-1">
+          <div className="mb-3 text-xs text-foreground/80 space-y-1 announcement-date-glow">
             {(announcement as any).eventDate && (
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
@@ -101,12 +101,12 @@ export function AnnouncementCard({ announcement, onView, onEdit, onDelete }: Ann
             )}
           </div>
         )}
-        <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground flex-wrap">
+          <div className="flex items-center gap-1 announcement-date-glow">
             <Calendar className="h-3 w-3" />
             <span>{safeFormatDistanceToNow((announcement as any).created_at || announcement.createdAt)}</span>
           </div>
-          <span>By {announcement.author}</span>
+          <span className="truncate max-w-full">By {announcement.author}</span>
         </div>
       </CardContent>
     </Card>

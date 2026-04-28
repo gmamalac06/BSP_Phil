@@ -126,8 +126,8 @@ export default function Announcements() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <CardSkeleton count={6} />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <CardSkeleton count={8} />
         </div>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -156,7 +156,7 @@ export default function Announcements() {
                 <div className="text-sm text-muted-foreground">
                   Showing {visibleAnnouncements.length} of {filteredAnnouncements.length} announcements
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {visibleAnnouncements.map((announcement) => (
                     <AnnouncementCard
                       key={announcement.id}

@@ -38,10 +38,15 @@ export default function Scouts() {
   }, [filters, activeTab]);
 
   const queryFilters = useMemo(() => {
-    const combined = { ...filters };
+    const combined: any = { ...filters };
     if (activeTab !== "all") {
       combined.status = activeTab;
     }
+    // FilterPanel emits `school` but the DB layer expects `schoolId`.
+    if (combined.school && !combined.schoolId) {
+      combined.schoolId = combined.school;
+    }
+    delete combined.school;
     return combined;
   }, [filters, activeTab]);
 

@@ -68,7 +68,7 @@ export default function Activities() {
         <div className="text-sm text-muted-foreground">
           Showing {visibleActivities.length} of {activityList.length} activities
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visibleActivities.map((activity) => (
             <ActivityCard
               key={activity.id}
@@ -182,8 +182,8 @@ export default function Activities() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <CardSkeleton count={6} />
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <CardSkeleton count={8} />
         </div>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>

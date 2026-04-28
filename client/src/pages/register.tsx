@@ -19,8 +19,9 @@ import { useCreateScout } from "@/hooks/useScouts";
 import { RegistrationSuccessDialog } from "@/components/registration-success-dialog";
 import { RegistrationForm } from "@/components/registration-form";
 import { uploadProfilePhoto, uploadPaymentProof } from "@/lib/storage";
+import { generateScoutUid } from "@/lib/scout-id";
 
-type Role = "staff" | "unit_leader" | "scout";
+type Role = "staff" | "admin" | "scout";
 
 const roleConfig = {
     staff: {
@@ -31,13 +32,13 @@ const roleConfig = {
         requiresApproval: true,
         affiliationType: "school" as const,
     },
-    unit_leader: {
-        icon: Users,
-        title: "Unit Leader",
-        description: "Register as a unit leader to manage your scout unit",
-        color: "bg-green-500",
+    admin: {
+        icon: Shield,
+        title: "Administrator",
+        description: "Register as an admin to oversee the entire scouting program",
+        color: "bg-green-700",
         requiresApproval: true,
-        affiliationType: "unit" as const,
+        affiliationType: "none" as const,
     },
     scout: {
         icon: User,
@@ -111,7 +112,7 @@ export default function Register() {
         if (role === "scout") {
             setStep(3); // Step 3 is scout details
         } else {
-            setStep(2); // Staff/unit_leader go to password step
+            setStep(2); // Staff/admin go to password step
         }
     };
 
@@ -121,7 +122,7 @@ export default function Register() {
             setSelectedRole(null);
         } else if (step === 3) {
             // If scout, go back to role selection (step 1)
-            // If staff/unit_leader, go back to password (step 2)
+            // If staff/admin, go back to password (step 2)
             if (selectedRole === "scout") {
                 setStep(1);
                 setSelectedRole(null);
@@ -169,8 +170,8 @@ export default function Register() {
             return false;
         }
 
-        // Unit leader must select a unit
-        if (selectedRole === "unit_leader" && !formData.unitId) {
+        // Admin does not require unit/school selection
+        if (false && selectedRole === "admin" && !formData.unitId) {
             toast({
                 title: "Unit Required",
                 description: "Please select the unit you lead",
@@ -189,11 +190,9 @@ export default function Register() {
     const handleScoutFormSubmit = async (data: any) => {
         setIsLoading(true);
         try {
-            // Generate a unique ID for the scout
+            // Generate a unique ID for the scout (last 8 digits encode birth MMDDYYYY)
             const tempScoutId = `temp-${Date.now()}`;
-            const year = new Date().getFullYear();
-            const random = Math.random().toString().slice(2, 8);
-            const scoutUid = `BSP-${year}-${random}`;
+            const scoutUid = generateScoutUid(data.birthDate || data.dateOfBirth || null);
 
             let paymentProofUrl = null;
             let profilePhotoUrl = null;
@@ -275,10 +274,8 @@ export default function Register() {
                 if (!scoutData.name || !scoutData.gender || !scoutData.municipality) {
                     throw new Error("Please fill in all required fields");
                 }
-                // Generate scout UID
-                const year = new Date().getFullYear();
-                const random = Math.random().toString().slice(2, 8);
-                const scoutUid = `BSP-${year}-${random}`;
+                // Generate scout UID (last 8 digits encode birth MMDDYYYY)
+                const scoutUid = generateScoutUid(scoutData.dateOfBirth || null);
                 const scoutRecord = {
                     uid: scoutUid,
                     name: scoutData.name,
@@ -305,8 +302,8 @@ export default function Register() {
                 setIsLoading(false);
                 return;
             }
-            // STAFF/UNIT_LEADER REGISTRATION - With Supabase Auth
-            // Validate for staff/unit_leader
+            // STAFF/ADMIN REGISTRATION - With Supabase Auth
+            // Validate for staff/admin
             if (!validateStaffUnitLeader()) {
                 setIsLoading(false);
                 return;
@@ -347,10 +344,7 @@ export default function Register() {
             if (selectedRole === "staff" && formData.schoolId) {
                 userRecord.school_id = formData.schoolId;
             }
-            // Add unit_id for unit_leader
-            if (selectedRole === "unit_leader" && formData.unitId) {
-                userRecord.unit_id = formData.unitId;
-            }
+            // Admin role does not require a unit affiliation
             // Create user record in public.users table
             const { error: userError } = await supabase.from("users").insert(userRecord);
             if (userError) {
@@ -586,8 +580,8 @@ export default function Register() {
                                     </div>
                                 )}
 
-                                {/* Unit Selection for Unit Leader */}
-                                {selectedRole === "unit_leader" && (
+                                {/* Unit Selection (legacy unit_leader, now hidden for admin) */}
+                                {false && (selectedRole as Role) === "admin" && (
                                     <div className="space-y-2 flex flex-col">
                                         <Label htmlFor="leaderUnit" className="flex items-center gap-2">
                                             <Users className="h-4 w-4" />

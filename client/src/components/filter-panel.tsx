@@ -62,6 +62,15 @@ export function FilterPanel({ onFilter, initialFilters }: FilterPanelProps) {
     setLocalFilters(newFilters);
   };
 
+  // Live debounced search: auto-apply filters whenever the search text changes.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      onFilter?.(localFilters);
+    }, 300);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localFilters.search]);
+
   const handleApplyFilters = () => {
     onFilter?.(localFilters);
   };
