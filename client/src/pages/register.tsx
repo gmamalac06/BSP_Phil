@@ -402,8 +402,8 @@ export default function Register() {
                         {/* Step 1: Role Selection */}
                         {step === 1 && (
                             <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-3">
-                                    {(Object.keys(roleConfig) as Role[]).map((role) => {
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    {(Object.keys(roleConfig) as Role[]).filter(r => r !== "scout").map((role) => {
                                         const config = roleConfig[role];
                                         const Icon = config.icon;
                                         return (

@@ -216,7 +216,16 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased;
+    color: rgba(255, 255, 255, 0.95);
+    background-color: hsl(var(--background));
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
+      url('/Image_3a84o33a84o33a84.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 }
 
@@ -262,7 +271,132 @@
 }
 .hover-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px -4px hsl(var(--primary) / 0.12);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== Frosted Glass Theme ===== */
+/* Main content area — transparent glass panel, image visible through */
+main.flex-1 {
+  background-color: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Cards — transparent blurred glass */
+.shadcn-card,
+.bg-card {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Card text colors for readability over transparent glass */
+.shadcn-card h1,
+.shadcn-card h2,
+.shadcn-card h3,
+.shadcn-card h4,
+.shadcn-card .text-card-foreground,
+.bg-card h1,
+.bg-card h2,
+.bg-card h3,
+.bg-card h4 {
+  color: rgba(255, 255, 255, 0.98) !important;
+}
+
+.shadcn-card .text-muted-foreground,
+.bg-card .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Sidebar */
+[data-sidebar="sidebar"],
+.bg-sidebar {
+  background-color: rgba(20, 30, 20, 0.6) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+}
+[data-sidebar="sidebar"] [data-sidebar="menu-button"]:hover,
+[data-sidebar="sidebar"] button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+/* Override sidebar foreground variables for glass readability */
+[data-sidebar="sidebar"] {
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-accent-foreground: 98 38% 70%;
+  --sidebar-border: 0 0% 100% / 0.1;
+}
+
+/* Header (top bar in main app layout) */
+header.border-b {
+  background-color: rgba(20, 30, 20, 0.4);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Popover / Dropdown / Select content */
+[data-radix-popper-content-wrapper] > *,
+.bg-popover {
+  background-color: rgba(30, 40, 30, 0.85) !important;
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Dialog / Sheet content */
+[role="dialog"] > div[class*="bg-background"],
+[role="dialog"] [class*="DialogContent"],
+.bg-background.fixed {
+  background-color: rgba(20, 30, 20, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+
+/* Inputs */
+input.bg-background,
+textarea.bg-background,
+.bg-input,
+input[class*="border-input"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Muted backgrounds (toolbars, badges, etc.) */
+.bg-muted {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Tables */
+table {
+  background-color: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* Page-level text on main: white for readability over dark glass */
+main.flex-1 h1,
+main.flex-1 h2,
+main.flex-1 h3,
+main.flex-1 h4,
+main.flex-1 > div > p,
+main.flex-1 > div > div > p:not(.shadcn-card p) {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+main.flex-1 .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* Sidebar link active glow */

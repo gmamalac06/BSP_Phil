@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ProtectedRoute } from "@/components/protected-route";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
+import Register from "@/pages/register";
 import ForgotPassword from "@/pages/forgot-password";
 import PendingApproval from "@/pages/pending-approval";
 import ResetPassword from "@/pages/reset-password";
@@ -39,6 +40,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/pending-approval" component={PendingApproval} />
@@ -161,7 +163,7 @@ function Router() {
 
 function AppContent() {
   const [location] = useLocation();
-  const publicRoutes = ["/", "/login", "/forgot-password", "/reset-password", "/pending-approval"];
+  const publicRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/pending-approval"];
   const isPublicRoute = publicRoutes.includes(location);
 
   const { toast } = useToast();

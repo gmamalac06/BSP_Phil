@@ -1,10 +1,10 @@
 // Helpers for Scout ID generation and membership validity periods.
 //
 // Scout UID format:
-//   BSP-{registrationYear}-{4randomDigits}{birthDD}{birthYYYY}
-// Examples:
-//   Birthday: 1995-04-24 -> BSP-2026-9482241995
-//   Last 6 digits encode the scout's full birth day (DD) + birth year (YYYY).
+//   BSP-{registrationYear}-{2randomDigits}{birthMM}{birthDD}{birthYYYY}
+// Example:
+//   Birthday: 1995-04-24 -> BSP-2026-87 04 24 1995  -> BSP-2026-8704241995
+//   Last 8 digits encode the scout's birth month (MM), day (DD), and year (YYYY).
 // Falls back to all-random suffix if no birth date is provided.
 
 function pad2(n: number): string {
@@ -20,18 +20,20 @@ function randomDigits(length: number): string {
 }
 
 /**
- * Generate a Scout UID whose final 6 digits encode the birth day (2) + birth year (4).
+ * Generate a Scout UID whose final 8 digits encode birth month (2) + day (2) + year (4).
+ * A 2-digit random prefix preserves uniqueness for scouts sharing the same birthday.
  */
 export function generateScoutUid(dateOfBirth?: string | Date | null): string {
   const regYear = new Date().getFullYear();
-  const rand = randomDigits(4);
+  const rand = randomDigits(2);
 
   if (dateOfBirth) {
     const dob = dateOfBirth instanceof Date ? dateOfBirth : new Date(dateOfBirth);
     if (!isNaN(dob.getTime())) {
+      const mm = pad2(dob.getMonth() + 1);
       const dd = pad2(dob.getDate());
       const yyyy = dob.getFullYear().toString();
-      return `BSP-${regYear}-${rand}${dd}${yyyy}`;
+      return `BSP-${regYear}-${rand}${mm}${dd}${yyyy}`;
     }
   }
 

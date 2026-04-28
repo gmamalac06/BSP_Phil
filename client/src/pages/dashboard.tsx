@@ -126,12 +126,7 @@ export default function Dashboard() {
       {!isScoutUser && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 stagger-children">
           {stats.map((stat, index) => {
-            const cardColors = [
-              "bg-[hsl(203,30%,92%)] border-[hsl(203,30%,72%)]",
-              "bg-[hsl(197,40%,92%)] border-[hsl(197,40%,72%)]",
-              "bg-[hsl(30,50%,93%)] border-[hsl(30,50%,78%)]",
-              "bg-[hsl(30,20%,88%)] border-[hsl(30,20%,70%)]"
-            ];
+            const cardColors = ["", "", "", ""];
             return (
               <StatCard 
                 key={stat.title} 
@@ -145,7 +140,7 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-3 stagger-children">
         <div className="lg:col-span-2 space-y-6">
-          <Card className="animate-fade-in-up bg-[hsl(203,30%,95%)] border-[hsl(203,30%,75%)]">
+          <Card className="animate-fade-in-up">
             <CardHeader>
               <CardTitle>Recent Announcements</CardTitle>
             </CardHeader>
@@ -168,7 +163,7 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-6">
-          <Card className="animate-fade-in-up bg-[hsl(197,40%,94%)] border-[hsl(197,40%,74%)]" style={{ animationDelay: "0.1s" }}>
+          <Card className="animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
             <CardHeader>
               <CardTitle>Upcoming Activities</CardTitle>
             </CardHeader>

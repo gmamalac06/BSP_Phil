@@ -150,10 +150,14 @@ export default function Landing() {
                   Go to Dashboard
                 </Button>
               ) : (
-                // Show Sign In when not logged in (registration is admin-only)
-                <Button size="lg" onClick={() => setLocation("/login")}>
-                  Sign In
-                </Button>
+                <>
+                  <Button size="lg" onClick={() => setLocation("/login")}>
+                    Sign In
+                  </Button>
+                  <Button size="lg" variant="secondary" onClick={() => setLocation("/register")}>
+                    Register
+                  </Button>
+                </>
               )
             )}
             <Button size="lg" variant="outline" onClick={() => {
