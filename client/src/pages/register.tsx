@@ -424,7 +424,7 @@ export default function Register() {
                                                 <p className="text-sm text-muted-foreground">{config.description}</p>
                                                 {config.requiresApproval && (
                                                     <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
-                                                        Requires admin approval
+
                                                     </p>
                                                 )}
                                             </button>
